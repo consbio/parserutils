@@ -26,7 +26,7 @@ setup(
     packages=[
         'parserutils', 'parserutils.tests'
     ],
-    requires=[
+    install_requires=[
         'defusedxml', 'python-dateutil', 'six'
     ],
     url='https://github.com/consbio/parserutils',
