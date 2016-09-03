@@ -4,14 +4,16 @@ from dateutil import parser
 from six import binary_type, string_types
 
 from parserutils.numbers import is_number
-from parserutils.strings import EMPTY_BIN, EMPTY_STR
 
 
-def parse_dates(d):
+def parse_dates(d, default='today'):
     """ Parses one or more dates from d """
 
+    if default == 'today':
+        default = datetime.datetime.today()
+
     if d is None:
-        return None
+        return default
     elif isinstance(d, (datetime.date, datetime.datetime)):
         return d
     elif is_number(d):
@@ -19,13 +21,15 @@ def parse_dates(d):
         d = d if isinstance(d, float) else float(d)
         return datetime.datetime.utcfromtimestamp(d)
     elif not isinstance(d, (binary_type, string_types)):
-        # Assume more than one date for parsing
-        return [parse_dates(s) for s in d]
-    elif d in {EMPTY_BIN, EMPTY_STR}:
+        if hasattr(d, '__iter__'):
+            return [parse_dates(s) for s in d]
+        else:
+            return default
+    elif len(d) == 0:
         # Behaves like dateutil.parser < version 2.5
-        return datetime.datetime.today()
+        return default
 
     try:
         return parser.parse(d)
     except (AttributeError, ValueError):
-        return None
+        return default
