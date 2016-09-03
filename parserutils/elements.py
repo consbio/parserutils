@@ -6,7 +6,7 @@ Contains an API defining all operations executable against an XML tree
 import re as regex
 import six
 
-from six import binary_type, iteritems, string_types
+from six import binary_type, iteritems, string_types, text_type
 
 from defusedxml.cElementTree import fromstring, tostring
 from defusedxml.cElementTree import iterparse
@@ -195,7 +195,7 @@ def get_remote_element(url, element_path=None):
     if url is None:
         return content
     elif regex.match(FILE_LOC_REGEX, url):
-        with open(url, 'r') as xml:
+        with open(url, 'rb') as xml:
             content = xml.read()
     else:
         urllib = getattr(six.moves, 'urllib')
@@ -259,7 +259,7 @@ def element_is_empty(elem_to_parse, element_path=None):
     return is_empty
 
 
-def insert_element(elem_to_parse, elem_idx, elem_path, elem_txt='', **kwargs):
+def insert_element(elem_to_parse, elem_idx, elem_path, elem_txt=text_type(), **kwargs):
     """
     Creates an element named after elem_path, containing elem_txt, with kwargs
     as attributes, inserts it into elem_to_parse at elem_idx and returns it.
@@ -308,7 +308,7 @@ def insert_element(elem_to_parse, elem_idx, elem_path, elem_txt='', **kwargs):
                     if idx == last_idx:
                         next_elem = insert_element(this_elem, elem_idx, tag, elem_txt, **kwargs)
                     else:
-                        next_elem = insert_element(this_elem, 0, tag, '', **kwargs)
+                        next_elem = insert_element(this_elem, 0, tag, text_type(), **kwargs)
 
                 this_elem = next_elem
 
@@ -453,7 +453,7 @@ def get_elements(parent_to_parse, element_path):
     return element.findall(element_path)
 
 
-def get_element_attribute(elem_to_parse, attrib_name, default_value=''):
+def get_element_attribute(elem_to_parse, attrib_name, default_value=text_type()):
     """
     :return: an attribute from the parsed element if it has the attribute,
     otherwise the default value
@@ -526,7 +526,7 @@ def get_element_name(parent_to_parse):
     return None if element is None else element.tag
 
 
-def get_element_tail(parent_to_parse, element_path=None, default_value=''):
+def get_element_tail(parent_to_parse, element_path=None, default_value=text_type()):
     """
     :return: text following the parsed parent element if it exists,
     otherwise the default value.
@@ -544,7 +544,7 @@ def get_element_tail(parent_to_parse, element_path=None, default_value=''):
     return default_value
 
 
-def get_element_text(parent_to_parse, element_path=None, default_value=''):
+def get_element_text(parent_to_parse, element_path=None, default_value=text_type()):
     """
     :return: text from the parsed parent element if it has a text value,
     otherwise the default value.
@@ -609,7 +609,7 @@ def _get_elements_property(parent_to_parse, element_path, prop_name):
     return texts
 
 
-def set_element_tail(parent_to_parse, element_path=None, element_tail=''):
+def set_element_tail(parent_to_parse, element_path=None, element_tail=text_type()):
     """
     Assigns the text following the parsed parent element and then returns it.
     If element_path is provided and doesn't exist, it is inserted with element_tail.
@@ -619,7 +619,7 @@ def set_element_tail(parent_to_parse, element_path=None, element_tail=''):
     return _set_element_property(parent_to_parse, element_path, _ELEM_TAIL, element_tail)
 
 
-def set_element_text(parent_to_parse, element_path=None, element_text=''):
+def set_element_text(parent_to_parse, element_path=None, element_text=text_type()):
     """
     Assigns a string value to the parsed parent element and then returns it.
     If element_path is provided and doesn't exist, it is inserted with element_text.
@@ -641,7 +641,7 @@ def _set_element_property(parent_to_parse, element_path, prop_name, value):
         element = insert_element(element, 0, element_path)
 
     if not isinstance(value, string_types):
-        value = ''
+        value = text_type()
 
     setattr(element, prop_name, value)
 
@@ -724,8 +724,8 @@ def dict_to_element(element_as_dict):
         element_as_dict.get(_ELEM_ATTRIBS, {})
     )
 
-    converted.tail = element_as_dict.get(_ELEM_TAIL, '')
-    converted.text = element_as_dict.get(_ELEM_TEXT, '')
+    converted.tail = element_as_dict.get(_ELEM_TAIL, text_type())
+    converted.text = element_as_dict.get(_ELEM_TEXT, text_type())
 
     for child in element_as_dict.get(_ELEM_CHILDREN, []):
         converted.append(dict_to_element(child))
@@ -733,7 +733,7 @@ def dict_to_element(element_as_dict):
     return converted
 
 
-def element_to_dict(elem_to_parse, recurse=False):
+def element_to_dict(elem_to_parse, recurse=True):
     """
     :return: an element losslessly as a dictionary. If recurse is True,
     the element's children are included, otherwise they are omitted.
@@ -824,9 +824,9 @@ def _element_to_object(element):
     accumulate(obj, attributes, element.tag)
 
     # Add as value a list containing text and tail if both are present, or just the text for one
-    text_values = ((text or '').strip() for text in (element.text, element.tail))
+    text_values = ((text or text_type()).strip() for text in (element.text, element.tail))
     text_values = [text for text in text_values if text]  # Filter on stripped values
-    text_values = (text_values[0] if len(text_values) == 1 else text_values) or ''
+    text_values = (text_values[0] if len(text_values) == 1 else text_values) or text_type()
 
     # Reduce obj to text only if no other keys are present
     if not obj:
@@ -843,12 +843,14 @@ def element_to_string(element, encoding=DEFAULT_ENCODING, method='xml'):
     # No Parsing of Element here, since String is the destination
     if isinstance(element, ElementTree):
         element = element.getroot()
+    if not isinstance(element, ElementType):
+        element = get_element(element)
 
     # Elements have 'iter' as opposed to '__iter__'
     if hasattr(element, 'iter'):
         return tostring(element, encoding, method).decode(encoding=DEFAULT_ENCODING)
 
-    return ''
+    return text_type()
 
 
 def iter_elements(element_function, parent_to_parse, **kwargs):
