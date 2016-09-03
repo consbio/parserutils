@@ -76,7 +76,8 @@ urls.get_base_url('http://www.path.com/test')                # Has Trailing: 'ht
 urls.get_base_url('http://www.path.com/test', True)          # Add Trailing: 'http://www.path.com/test/'
 urls.get_base_url('http://www.params.com/test?a=aaa', True)  # Add Trailing: 'http://www.params.com/test/'
 
-urls.update_url_params('http://www.params.com?a=aaa')           # Unchanged: 'http://www.params.com?a=aaa'
+urls.update_url_params('http://www.params.com?a=aaa', a='aaa')  # Unchanged: 'http://www.params.com?a=aaa'
+urls.update_url_params('http://www.params.com?a=aaa', a='xxx')  # Updated: 'http://www.params.com?a=xxx'
 urls.update_url_params('http://www.params.com', b='bbb')        # Updated: 'http://www.params.com?b=bbb'
 urls.update_url_params('http://www.params.com', c=['c', 'cc'])  # Updated: 'http://www.params.com?c=c&c=cc'
 ```
@@ -105,7 +106,7 @@ xml_string == elements.element_to_string(converted)
 
 # Conversion to flattened object
 root, obj = elements.element_to_object(converted)
-obj == {'root': {'parent': {'child': ['one', 'two']}}}
+obj == {'root': {'parent': {'child': ['one', 'two'], 'uglyChild': 'yuck'}}}
 
 
 # Read in an XML file and write it elswhere
