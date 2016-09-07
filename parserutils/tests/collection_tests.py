@@ -1,11 +1,48 @@
 import unittest
 
-from parserutils.collections import setdefaults
+from parserutils.collections import accumulate, setdefaults
 from parserutils.collections import filter_empty, reduce_value, wrap_value
 from parserutils.strings import EMPTY_BIN, EMPTY_STR
 
 
-class DefaultsTestCase(unittest.TestCase):
+class DictsTestCase(unittest.TestCase):
+
+    def test_accumulate(self):
+        """ Tests accumulate with general inputs """
+
+        # Test with empty items
+        self.assertEqual(accumulate(None), {})
+        self.assertEqual(accumulate(EMPTY_BIN), {})
+        self.assertEqual(accumulate(EMPTY_STR), {})
+        self.assertEqual(accumulate(dict()), {})
+        self.assertEqual(accumulate(list()), {})
+        self.assertEqual(accumulate(set()), {})
+        self.assertEqual(accumulate(tuple()), {})
+        self.assertEqual(accumulate(x for x in EMPTY_BIN), {})
+        self.assertEqual(accumulate((x for x in EMPTY_STR)), {})
+
+        # Test with items containing single key/val
+        self.assertEqual(accumulate({(None, None)}), {None: [None]})
+        self.assertEqual(accumulate([(EMPTY_BIN, EMPTY_STR)]), {EMPTY_BIN: [EMPTY_STR]})
+        self.assertEqual(accumulate(([EMPTY_STR, EMPTY_BIN],)), {EMPTY_STR: [EMPTY_BIN]})
+        self.assertEqual(accumulate((k, v) for k, v in [['key', 'val']]), {'key': ['val']})
+        self.assertEqual(accumulate(((k, v) for k, v in [(0, 1)])), {0: [1]})
+
+        # Test with items containing single vals under multiple keys
+        self.assertEqual(
+            accumulate([('key1', 'val'), ('key2', 'val'), ('key3', 'val')]),
+            {'key1': ['val'], 'key2': ['val'], 'key3': ['val']}
+        )
+        # Test with items containing multiple vals under a single key
+        self.assertEqual(
+            accumulate([('key', 'val1'), ('key', 'val2'), ('key', 'val3')]),
+            {'key': ['val1', 'val2', 'val3']}
+        )
+        # Test with items containing multiple vals under multiple keys
+        self.assertEqual(
+            accumulate([('key3', 'val1'), ('key2', 'val2'), ('key1', 'val3')]),
+            {'key1': ['val3'], 'key2': ['val2'], 'key3': ['val1']}
+        )
 
     def test_setdefaults(self):
         """ Tests setdefaults with general inputs """

@@ -1,6 +1,6 @@
 import unittest
 
-from parserutils.tests.collection_tests import DefaultsTestCase, ListTupleSetTestCase
+from parserutils.tests.collection_tests import DictsTestCase, ListTupleSetTestCase
 from parserutils.tests.date_tests import DateTestCase
 from parserutils.tests.element_tests import XMLCheckTests, XMLInsertRemoveTests, XMLPropertyTests, XMLTests
 from parserutils.tests.number_tests import NumberTestCase
@@ -8,7 +8,7 @@ from parserutils.tests.string_tests import StringCasingTestCase, StringConversio
 from parserutils.tests.url_tests import URLTestCase
 
 
-class CollectionsTestCase(DefaultsTestCase, ListTupleSetTestCase):
+class CollectionsTestCase(DictsTestCase, ListTupleSetTestCase):
     """ Consolidates all collection_tests for ease of execution """
 
 

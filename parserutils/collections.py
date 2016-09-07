@@ -1,8 +1,23 @@
+from _collections import defaultdict
+
 from six import iteritems, string_types
 from parserutils.strings import EMPTY_STR
 
 
 # DICT FUNCTIONS #
+
+
+def accumulate(items):
+    """ :return: item pairs as key: val, with vals under duplicate keys accumulated under each """
+
+    if not items:
+        return {}
+
+    accumulated = defaultdict(list)
+    for key, val in items:
+        accumulated[key].append(val)
+
+    return accumulated
 
 
 def setdefaults(d, defaults):
