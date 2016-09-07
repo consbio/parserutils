@@ -1,4 +1,5 @@
 import re
+import unicodedata
 
 from string import ascii_letters, digits
 from six import binary_type, text_type
@@ -55,3 +56,32 @@ def _underscored_to_camel(s):
         return s
 
     return TO_CAMEL_REGEX.sub(lambda match: match.group(1).upper(), s.strip('_').lower())
+
+
+def to_ascii_equivalent(text):
+    """ Converts any non-ASCII characters (accents, etc.) to their best-fit ASCII equivalents """
+
+    if text is None:
+        return None
+    elif isinstance(text, binary_type):
+        text = text.decode('utf-8')
+    elif not isinstance(text, text_type):
+        try:
+            text = text_type(text)
+        except UnicodeDecodeError:
+            text = text.decode('utf-8')
+
+    text = EMPTY_STR.join(_ASCII_PUNCTUATION_MAP.get(c, c) for c in text)
+    return EMPTY_STR.join(c for c in unicodedata.normalize('NFD', text) if unicodedata.category(c) != 'Mn')
+
+_ASCII_PUNCTUATION_MAP = {
+    u'\u2010': u'-', u'\u2011': u'-',                   # Hyphens
+    u'\u2012': u'-', u'\u2013': u'-', u'\u2014': u'-',  # Dashes
+    u'\u02b9': u"'", u'\u02bb': u"'", u'\u02bc': u"'",  # Single Quotes
+    u'\u02bd': u"'", u'\u2018': u"'", u'\u2019': u"'",  # Single Quotes
+    u'\u02ba': u'"', u'\u201d': u'"', u'\u201c': u'"',  # Double Quotes
+    u'\u3001': u',',                                    # Commas
+    u'\u2e32': u',', u'\u2e34': u',', u'\u2e41': u',',  # Commas
+    u'\ufe11': u',', u'\ufe10': u',', u'\ufe50': u',',  # Commas
+    u'\ufe51': u',', u'\uff64': u',', u'\uff0c': u',',  # Commas
+}

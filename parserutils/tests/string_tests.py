@@ -1,7 +1,8 @@
 import unittest
 
-from parserutils.strings import EMPTY_BIN, EMPTY_STR
+from parserutils.strings import _ASCII_PUNCTUATION_MAP, ALPHANUMERIC, EMPTY_BIN, EMPTY_STR
 from parserutils.strings import camel_to_constant, camel_to_snake, constant_to_camel, snake_to_camel
+from parserutils.strings import to_ascii_equivalent
 
 
 class StringCasingTestCase(unittest.TestCase):
@@ -111,6 +112,36 @@ class StringCasingTestCase(unittest.TestCase):
         )
         for value in values:
             self.assertEqual(camel_to_snake(snake_to_camel(value)), value)
+
+
+class StringConversionTestCase(unittest.TestCase):
+
+    def test_to_ascii_equivalent(self):
+        """ Tests to_ascii_equivalent with general inputs """
+
+        # Test legal empty inputs
+        self.assertEqual(to_ascii_equivalent(None), None)
+        self.assertEqual(to_ascii_equivalent(EMPTY_BIN), EMPTY_STR)
+        self.assertEqual(to_ascii_equivalent(EMPTY_STR), EMPTY_STR)
+
+        # Test that ASCII is unchanged
+        alphanumeric = EMPTY_STR.join(ALPHANUMERIC)
+        self.assertEqual(to_ascii_equivalent(alphanumeric), alphanumeric)
+
+        # Test that known issues are handled
+        known_issues = [
+            u'\u2010', u'\u2011',             # Hyphens
+            u'\u2012', u'\u2013', u'\u2014',  # Dashes
+            u'\u02b9', u'\u02bb', u'\u02bc',  # Single Quotes
+            u'\u02bd', u'\u2018', u'\u2019',  # Single Quotes
+            u'\u02ba', u'\u201d', u'\u201c',  # Double Quotes
+            u'\u3001',                        # Commas
+            u'\u2e32', u'\u2e34', u'\u2e41',  # Commas
+            u'\ufe11', u'\ufe10', u'\ufe50',  # Commas
+            u'\ufe51', u'\uff64', u'\uff0c',  # Commas
+        ]
+        for issue in known_issues:
+            self.assertEqual(to_ascii_equivalent(issue), _ASCII_PUNCTUATION_MAP[issue])
 
 
 if __name__ == '__main__':
