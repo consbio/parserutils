@@ -28,20 +28,47 @@ class DictsTestCase(unittest.TestCase):
         self.assertEqual(accumulate((k, v) for k, v in [['key', 'val']]), {'key': ['val']})
         self.assertEqual(accumulate(((k, v) for k, v in [(0, 1)])), {0: [1]})
 
-        # Test with items containing single vals under multiple keys
+        # Test with items containing single key/val, reducing each
+        self.assertEqual(accumulate({(None, None)}, reduce_each=True), {None: None})
+        self.assertEqual(accumulate([(EMPTY_BIN, EMPTY_STR)], reduce_each=True), {EMPTY_BIN: EMPTY_STR})
+        self.assertEqual(accumulate(([EMPTY_STR, EMPTY_BIN],), reduce_each=True), {EMPTY_STR: EMPTY_BIN})
+        self.assertEqual(accumulate(((k, v) for k, v in [['key', 'val']]), reduce_each=True), {'key': 'val'})
+        self.assertEqual(accumulate(((k, v) for k, v in [(0, 1)]), reduce_each=True), {0: 1})
+
+        # Test with items containing single vals under multiple keys, with and without reduction
         self.assertEqual(
             accumulate([('key1', 'val'), ('key2', 'val'), ('key3', 'val')]),
             {'key1': ['val'], 'key2': ['val'], 'key3': ['val']}
         )
-        # Test with items containing multiple vals under a single key
+        self.assertEqual(
+            accumulate([('key1', 'val'), ('key2', 'val'), ('key3', 'val')], reduce_each=True),
+            {'key1': 'val', 'key2': 'val', 'key3': 'val'}
+        )
+
+        # Test with items containing multiple vals under a single key, with and without reduction
         self.assertEqual(
             accumulate([('key', 'val1'), ('key', 'val2'), ('key', 'val3')]),
             {'key': ['val1', 'val2', 'val3']}
         )
-        # Test with items containing multiple vals under multiple keys
+        self.assertEqual(
+            accumulate([('key', 'val1'), ('key', 'val2'), ('key', 'val3')], reduce_each=True),
+            {'key': ['val1', 'val2', 'val3']}
+        )
+        self.assertEqual(
+            accumulate(
+                [('key', 'val1'), ('key', 'val2'), ('key2', ['val1', 'val2']), ('key3', 'val3')], reduce_each=True
+            ),
+            {'key': ['val1', 'val2'], 'key2': ['val1', 'val2'], 'key3': 'val3'}
+        )
+
+        # Test with items containing multiple vals under multiple keys, with and without reduction
         self.assertEqual(
             accumulate([('key3', 'val1'), ('key2', 'val2'), ('key1', 'val3')]),
             {'key1': ['val3'], 'key2': ['val2'], 'key3': ['val1']}
+        )
+        self.assertEqual(
+            accumulate([('key3', 'val1'), ('key2', 'val2'), ('key1', 'val3')], reduce_each=True),
+            {'key1': 'val3', 'key2': 'val2', 'key3': 'val1'}
         )
 
     def test_setdefaults(self):
@@ -298,11 +325,8 @@ class ListTupleSetTestCase(unittest.TestCase):
         self.assertEqual(wrap_value({'b': 'bbb', 'c': 'ccc'}), [{'b': 'bbb', 'c': 'ccc'}])
 
         # Test with already wrapped values
-        self.assertEqual(wrap_value([None]), [None])
         self.assertEqual(wrap_value([0]), [0])
         self.assertEqual(wrap_value([1]), [1])
-        self.assertEqual(wrap_value([EMPTY_BIN]), [EMPTY_BIN])
-        self.assertEqual(wrap_value([EMPTY_STR]), [EMPTY_STR])
         self.assertEqual(wrap_value(['x']), ['x'])
         self.assertEqual(wrap_value({'y'}), {'y'})
         self.assertEqual(wrap_value(('z',)), ('z',))
@@ -313,8 +337,24 @@ class ListTupleSetTestCase(unittest.TestCase):
         self.assertEqual(wrap_value(set()), [])
         self.assertEqual(wrap_value(tuple()), [])
 
+        # Test with non-empty collections, filtering out empty
+        self.assertEqual(wrap_value([None]), [])
+        self.assertEqual(wrap_value([EMPTY_BIN]), [])
+        self.assertEqual(wrap_value([EMPTY_STR]), [])
+        self.assertEqual(wrap_value([None, None]), [])
+        self.assertEqual(wrap_value([EMPTY_BIN, EMPTY_STR]), [])
+
+        # Test with non-empty collections, preserving empty
+        self.assertEqual(wrap_value([None], include_empty=True), [None])
+        self.assertEqual(wrap_value([EMPTY_BIN], include_empty=True), [EMPTY_BIN])
+        self.assertEqual(wrap_value([EMPTY_STR], include_empty=True), [EMPTY_STR])
+        self.assertEqual(wrap_value([None, None], include_empty=True), [None, None])
+        self.assertEqual(wrap_value([EMPTY_BIN, EMPTY_STR], include_empty=True), [EMPTY_BIN, EMPTY_STR])
+
         # Test with non-empty collections
-        self.assertEqual(wrap_value([None, None]), [None, None])
+        self.assertEqual(wrap_value([0, 1, 2]), [0, 1, 2])
+        self.assertEqual(wrap_value({0, 1, 2}), {0, 1, 2})
+        self.assertEqual(wrap_value((0, 1, 2)), (0, 1, 2))
         self.assertEqual(wrap_value(['a', 'b', 'c']), ['a', 'b', 'c'])
         self.assertEqual(wrap_value({'a', 'b', 'c'}), {'a', 'b', 'c'})
         self.assertEqual(wrap_value(('a', 'b', 'c')), ('a', 'b', 'c'))

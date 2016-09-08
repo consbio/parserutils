@@ -7,7 +7,7 @@ from parserutils.strings import EMPTY_STR
 # DICT FUNCTIONS #
 
 
-def accumulate(items):
+def accumulate(items, reduce_each=False):
     """ :return: item pairs as key: val, with vals under duplicate keys accumulated under each """
 
     if not items:
@@ -17,7 +17,10 @@ def accumulate(items):
     for key, val in items:
         accumulated[key].append(val)
 
-    return accumulated
+    if not reduce_each:
+        return accumulated
+    else:
+        return {k: reduce_value(v, v) for k, v in iteritems(accumulated)}
 
 
 def setdefaults(d, defaults):
@@ -121,18 +124,19 @@ def reduce_value(value, default=EMPTY_STR):
     return default if value is None else value
 
 
-def wrap_value(value):
+def wrap_value(value, include_empty=False):
     """
     :return: the value wrapped in a list unless it is already iterable (and not a dict)
+    If so, empty values will be filtered out by default, and an empty list is returned.
     """
 
     if value is None:
-        return []
+        return [None] if include_empty else []
     elif hasattr(value, '__len__') and len(value) == 0:
-        return []
+        return [value] if include_empty else []
     elif isinstance(value, (string_types, dict)):
         return [value]
     elif not hasattr(value, '__iter__'):
         return [value]
 
-    return value
+    return value if include_empty else filter_empty(value, [])

@@ -19,6 +19,11 @@ Here's what you can do with `dict` objects and other collections.
 ```
 from parserutils import collections
 
+collections.accumulate([('key', 'val1'), ('key', 'val2'), ('key', 'val3')])   # {'key': ['val1', 'val2', 'val3']}
+collections.accumulate(
+    [('key1', 'val1'), ('key2', 'val2'), ('key3', 'val3')], reduce_each=True  # {'key1': 'val1', 'key2': 'val2', 'key3': 'val3'}
+)
+
 collections.setdefaults({}, 'a.b')                         # {'a': {'b': None}}
 collections.setdefaults({}, ['a.b', 'a.c'])                # {'a': {'b': None, 'c': None}}
 collections.setdefaults({}, {'a.b': 'bbb', 'a.c': 'ccc'})  # {'a': {'b': 'bbb', 'c': 'ccc'}}
@@ -57,29 +62,31 @@ from parserutils import urls
 
 # These string conversions are written to be fast and reliable
 
-strings.camel_to_constant('toConstant')  # TO_CONSTANT
-strings.camel_to_constant('XMLConstant')  # XML_CONSTANT
+strings.camel_to_constant('toConstant')        # TO_CONSTANT
+strings.camel_to_constant('XMLConstant')       # XML_CONSTANT
 strings.camel_to_constant('withNumbers1And2')  # WITH_NUMBERS1_AND2
 
-strings.camel_to_snake('toSnake')  # to_snake
+strings.camel_to_snake('toSnake')              # to_snake
 strings.camel_to_snake('withXMLAbbreviation')  # with_xml_abbreviation
-strings.camel_to_snake('withNumbers3And4')  # with_numbers3_and4
+strings.camel_to_snake('withNumbers3And4')     # with_numbers3_and4
 
-strings.snake_to_camel('from_snake')  # fromSnake
+strings.snake_to_camel('from_snake')              # fromSnake
 strings.snake_to_camel('_leading_and_trailing_')  # leadingAndTrailing
-strings.snake_to_camel('extra___underscores')  # extraUnderscores
+strings.snake_to_camel('extra___underscores')     # extraUnderscores
+
+strings.to_ascii_equivalent('smart quotes, etc.')  # Replaces with ascii quotes, etc.
 
 # URL manipulation leverages urllib, but spares you the extra code
 
-urls.get_base_url('http://www.params.com?a=aaa')             # Add Trailing: 'http://www.params.com/'
-urls.get_base_url('http://www.path.com/test')                # Has Trailing: 'http://www.path.com/'
-urls.get_base_url('http://www.path.com/test', True)          # Add Trailing: 'http://www.path.com/test/'
-urls.get_base_url('http://www.params.com/test?a=aaa', True)  # Add Trailing: 'http://www.params.com/test/'
+urls.get_base_url('http://www.params.com?a=aaa')                  # 'http://www.params.com/'
+urls.get_base_url('http://www.path.com/test')                     # 'http://www.path.com/'
+urls.get_base_url('http://www.path.com/test', include_path=True)  # 'http://www.path.com/test/'
+urls.get_base_url('http://www.params.com/test?a=aaa', True)       # 'http://www.params.com/test/'
 
-urls.update_url_params('http://www.params.com?a=aaa', a='aaa')  # Unchanged: 'http://www.params.com?a=aaa'
-urls.update_url_params('http://www.params.com?a=aaa', a='xxx')  # Updated: 'http://www.params.com?a=xxx'
-urls.update_url_params('http://www.params.com', b='bbb')        # Updated: 'http://www.params.com?b=bbb'
-urls.update_url_params('http://www.params.com', c=['c', 'cc'])  # Updated: 'http://www.params.com?c=c&c=cc'
+urls.update_url_params('http://www.params.com?a=aaa', a='aaa')  # 'http://www.params.com?a=aaa'
+urls.update_url_params('http://www.params.com?a=aaa', a='xxx')  # 'http://www.params.com?a=xxx'
+urls.update_url_params('http://www.params.com', b='bbb')        # 'http://www.params.com?b=bbb'
+urls.update_url_params('http://www.params.com', c=['c', 'cc'])  # 'http://www.params.com?c=c&c=cc'
 ```
 
 Finally, XML parsing is also supported, using the cElementTree and defusedxml libraries for performance and security
