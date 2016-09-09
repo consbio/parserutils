@@ -1,4 +1,7 @@
 # parserutils
+
+[![Build Status](https://travis-ci.org/consbio/parserutils.png?branch=master)](https://travis-ci.org/consbio/parserutils)
+
 This is a library of utility functions designed to make a developer's life easier.
 
 The functions in this library are written to be both performant and Pythonic, as well as compatible with Python 2.7 and 3.5.
