@@ -10,3 +10,6 @@ install:
   - "pip install six"
 
 script: "python setup.py test"
+
+after_success:
+  - coveralls || echo "!! intermittent coveralls failure"
