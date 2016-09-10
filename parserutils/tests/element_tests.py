@@ -29,16 +29,18 @@ ELEM_PROPERTIES = (ELEM_NAME, ELEM_TEXT, ELEM_TAIL, ELEM_ATTRIBS)
 class XMLTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.data_dir = os.path.join(os.path.dirname(__file__), 'data')
+        sep = os.path.sep
+        dir_name = os.path.dirname(os.path.abspath(__file__))
+        self.data_dir = os.path.sep.join((dir_name, 'data'))
 
-        self.elem_data_file_path = '/'.join((self.data_dir, 'elem_data.xml'))
-        self.namespace_file_path = '/'.join((self.data_dir, 'namespace_data.xml'))
-        self.test_file_path = '/'.join((self.data_dir, 'test_data.xml'))
+        self.elem_data_file_path = sep.join((self.data_dir, 'elem_data.xml'))
+        self.namespace_file_path = sep.join((self.data_dir, 'namespace_data.xml'))
+        self.test_file_path = sep.join((self.data_dir, 'test_data.xml'))
 
         self.elem_data_file = open(self.elem_data_file_path)
         self.namespace_file = open(self.namespace_file_path)
 
-        with open('/'.join((self.data_dir, 'elem_data.xml'))) as data:
+        with open(sep.join((self.data_dir, 'elem_data.xml'))) as data:
             self.elem_data_str = data.read()
 
         self.elem_data_bin = self.elem_data_str.encode()
