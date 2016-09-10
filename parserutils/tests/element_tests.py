@@ -287,18 +287,20 @@ class XMLTests(XMLTestCase):
 
         self.assertIsNone(get_remote_element(None), 'None check failed for get_remote_element')
 
+        file_path = self.elem_data_file_path
         self.assertIsNotNone(
-            get_remote_element(self.elem_data_file_path), 'Remote element returns None for file'
+            get_remote_element(file_path), 'Remote element returns None for file'
         )
         self.assertIsNotNone(
-            get_remote_element(self.elem_data_file_path, 'b'), 'Remote element returns None for "b"'
+            get_remote_element(file_path, 'b'), 'Remote element returns None for "b"'
         )
 
+        file_path = self.namespace_file_path
         self.assertIsNotNone(
-            get_remote_element(self.namespace_file_path), 'Remote element returns None for namespaces'
+            get_remote_element(file_path), 'Remote element returns None for namespaces'
         )
         self.assertIsNotNone(
-            get_remote_element(self.namespace_file_path, 'c'), 'Remote element returns None for "c"'
+            get_remote_element(file_path, 'c'), 'Remote element returns None for "c"'
         )
 
         remote_url = 'http://en.wikipedia.org/wiki/XML'
@@ -405,7 +407,7 @@ class XMLTests(XMLTestCase):
             data_type = type(data).__name__
             element = get_element(data)
 
-            original_wout_dec = element_to_string(element)
+            original_wout_dec = element_to_string(element, None, None)
             original_with_dec = element_to_string(element, encoding=DEFAULT_ENCODING, method='xml')
 
             self.assertEqual(
