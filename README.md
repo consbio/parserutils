@@ -10,7 +10,7 @@ They are both documented and covered thoroughly by unit tests that fully describ
 In general, my philosophy is that utility functions should be fast and handle edge cases so the caller doesn't have to take all kinds of precautions or do type checking on results.
 Thus, in this library, if None will break a function it is simply returned as is; if there's nothing to do for a value, the result is returned without processing; Etc.
 
-Still, this is just a starting point. I welcome feedback and requests for additional functionality.
+But this is just a starting point. I welcome feedback and requests for additional functionality.
 
 
 #Installation#
