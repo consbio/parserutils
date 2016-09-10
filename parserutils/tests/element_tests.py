@@ -3,7 +3,7 @@ import unittest
 
 from six import iteritems, string_types, text_type, StringIO
 
-from parserutils.elements import DEFAULT_ENCODING, Element, ElementTree, ElementType
+from parserutils.elements import Element, ElementTree, ElementType
 from parserutils.elements import iselement, fromstring
 
 from parserutils.elements import create_element_tree, clear_children, clear_element, copy_element
@@ -75,16 +75,6 @@ class XMLTestCase(unittest.TestCase):
 
         return value
 
-    def _wrap_property(self, value):
-        """ Ensure property values trim strings and reduce lists with single values to the value itself """
-
-        if value is None:
-            return []
-        elif isinstance(value, list):
-            return value
-        else:
-            return [value]
-
     def assert_element_function(self, elem_func, elem_xpath=None, **elem_kwargs):
         """
         Ensures elem_func returns None for None, and that the element returned by elem_func is equal to base_elem.
@@ -101,11 +91,10 @@ class XMLTestCase(unittest.TestCase):
         for data in self.elem_data_inputs:
             self.assert_elements_are_equal(elem_func(data, **elem_kwargs), base_elem, elem_name)
 
-    def assert_element_is_type(self, element, elem_name=None, elem_type=ElementType):
+    def assert_element_is_type(self, element, elem_name, elem_type=ElementType):
         """ Ensures the element is of the type specified by element_utils.ElementType """
 
-        if elem_name is None:
-            elem_name = getattr(element, ELEM_NAME, 'None')
+        elem_name = elem_name or getattr(element, ELEM_NAME, 'None')
 
         self.assertIsInstance(
             element, elem_type,
@@ -127,39 +116,19 @@ class XMLTestCase(unittest.TestCase):
     def assert_element_trees_are_equal(self, this_tree, that_tree, elem_name=None):
         """ Ensures both element trees are comparable, and their properties are equal """
 
-        if this_tree is None and that_tree is None:
-            return
-
         self.assert_element_is_type(this_tree, 'elem_tree_1', ElementTree)
         self.assert_element_is_type(that_tree, 'elem_tree_2', ElementTree)
 
         self.assert_elements_are_equal(this_tree.getroot(), that_tree.getroot(), elem_name)
 
-    def assert_elements_are_comparable(self, this_elem, that_elem, elem_name=None, elem_type=ElementType):
-        """ Ensures both elements are None, or both are of the type element_utils.ElementType """
-
-        if elem_name is None:
-            elem_name = getattr(this_elem, ELEM_NAME, getattr(that_elem, ELEM_NAME, 'None'))
-
-        if this_elem is None and that_elem is not None:
-            self.assertIsNone(that_elem, 'None does not equal "{0}"'.format(elem_name))
-
-        if this_elem is not None and that_elem is None:
-            self.assertIsNone(this_elem, 'None does not equal "{0}"'.format(elem_name))
-
-        self.assert_element_is_type(this_elem, elem_name, elem_type)
-        self.assert_element_is_type(that_elem, elem_name, elem_type)
-
     def assert_elements_are_equal(self, this_elem, that_elem, elem_name=None):
         """ Ensures both elements are comparable, and their properties are equal """
 
-        if this_elem is None and that_elem is None:
-            return
-
         if elem_name is None:
             elem_name = getattr(this_elem, ELEM_NAME, getattr(that_elem, ELEM_NAME, 'None'))
 
-        self.assert_elements_are_comparable(this_elem, that_elem, elem_name)
+        self.assert_element_is_type(this_elem, elem_name, ElementType)
+        self.assert_element_is_type(that_elem, elem_name, ElementType)
 
         for prop in ELEM_PROPERTIES:
             self.assert_element_properties_equal(this_elem, that_elem, prop, elem_name)
@@ -397,27 +366,32 @@ class XMLTests(XMLTestCase):
         self.assertEqual('', element_to_string(None), 'None check failed for element_to_string')
         self.assertEqual('', element_to_string([]), 'Empty check failed for element_to_string')
 
-        base_elem = fromstring(self.elem_data_str)
+        self.assertEqual(
+            self.elem_data_str, element_to_string(fromstring(self.elem_data_str), None, None),
+            'Raw string check failed for element_to_string'
+        )
 
-        converted_wout_dec = element_to_string(base_elem, None, None)
-        converted_with_dec = element_to_string(base_elem)
+    def test_element_to_string_with_dec(self):
+        """ Tests element conversion from different data sources to XML, with and without a declaration line """
 
-        # Requires double quotes and consistent spacing in source file
-        self.assertEqual(self.elem_data_str, converted_wout_dec, 'Raw string check failed for element_to_string')
+        as_string = element_to_string(fromstring(self.elem_data_str))
 
         for data in self.elem_data_inputs:
             data_type = type(data).__name__
-            element = get_element(data)
-
-            original_wout_dec = element_to_string(element, None, None)
-            original_with_dec = element_to_string(element, encoding=DEFAULT_ENCODING, method='xml')
-
             self.assertEqual(
-                original_wout_dec, converted_wout_dec,
+                element_to_string(data), as_string,
                 'With declaration check failed for element_to_string for {0}'.format(data_type)
             )
+
+    def test_element_to_string_wout_dec(self):
+        """ Tests element conversion from different data sources to XML, with and without a declaration line """
+
+        as_string = element_to_string(fromstring(self.elem_data_str), None, None)
+
+        for data in self.elem_data_inputs:
+            data_type = type(data).__name__
             self.assertEqual(
-                original_with_dec, converted_with_dec,
+                element_to_string(data, None, None), as_string,
                 'Without declaration check failed for element_to_string for {0}'.format(data_type)
             )
 
@@ -743,14 +717,17 @@ class XMLPropertyTests(XMLTestCase):
     ):
         """ Ensures the properties returned by the function are as expected for all data sources """
 
+        def wrap_property(value):
+            return value if isinstance(value, list) else [value]
+
         self.assert_element_values_equal(prop, elem_func(None, **elem_kwargs), default)
 
-        target = self._wrap_property(target)
+        target = wrap_property(target)
 
         self.elem_data_inputs += ('<a/>',)  # Test with empty element too
 
         for data in self.elem_data_inputs:
-            elems = self._wrap_property(elem_func(data, **elem_kwargs))
+            elems = wrap_property(elem_func(data, **elem_kwargs))
 
             for idx, val in enumerate((getattr(elem, prop) for elem in elems)):
                 self.assert_element_values_equal(prop, val, target[idx] if target else u'')
