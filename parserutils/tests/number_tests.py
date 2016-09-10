@@ -30,7 +30,3 @@ class NumberTestCase(unittest.TestCase):
         valid += (True, False)
         for num in valid:
             self.assertTrue(is_number(num, if_bool=True), '"{0}" is not a number'.format(type(num).__name__))
-
-
-if __name__ == '__main__':
-    unittest.main()

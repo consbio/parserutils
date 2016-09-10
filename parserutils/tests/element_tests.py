@@ -4,7 +4,7 @@ import unittest
 from six import iteritems, string_types, text_type, StringIO
 
 from parserutils.elements import DEFAULT_ENCODING, Element, ElementTree, ElementType
-from parserutils.elements import iselement, fromstring, tostring
+from parserutils.elements import iselement, fromstring
 
 from parserutils.elements import create_element_tree, clear_children, clear_element, copy_element
 from parserutils.elements import get_element_tree, get_element, get_remote_element, get_elements
@@ -41,12 +41,13 @@ class XMLTestCase(unittest.TestCase):
         with open('/'.join((self.data_dir, 'elem_data.xml'))) as data:
             self.elem_data_str = data.read()
 
-        self.elem_data_dict = element_to_dict(self.elem_data_str, True)
+        self.elem_data_bin = self.elem_data_str.encode()
+        self.elem_data_dict = element_to_dict(self.elem_data_str)
         self.elem_data_reader = StringIO(self.elem_data_str)
 
         self.elem_data_inputs = (
             fromstring(self.elem_data_str), ElementTree(fromstring(self.elem_data_str)),
-            self.elem_data_file, self.elem_data_str, self.elem_data_dict, self.elem_data_reader
+            self.elem_data_file, self.elem_data_bin, self.elem_data_str, self.elem_data_dict, self.elem_data_reader
         )
 
         self.elem_xpath = 'c'
@@ -74,7 +75,13 @@ class XMLTestCase(unittest.TestCase):
 
     def _wrap_property(self, value):
         """ Ensure property values trim strings and reduce lists with single values to the value itself """
-        return value if isinstance(value, list) else [value]
+
+        if value is None:
+            return []
+        elif isinstance(value, list):
+            return value
+        else:
+            return [value]
 
     def assert_element_function(self, elem_func, elem_xpath=None, **elem_kwargs):
         """
@@ -280,9 +287,23 @@ class XMLTests(XMLTestCase):
 
         self.assertIsNone(get_remote_element(None), 'None check failed for get_remote_element')
 
+        self.assertIsNotNone(
+            get_remote_element(self.elem_data_file_path), 'Remote element returns None for file'
+        )
+        self.assertIsNotNone(
+            get_remote_element(self.elem_data_file_path, 'b'), 'Remote element returns None for "b"'
+        )
+
+        self.assertIsNotNone(
+            get_remote_element(self.namespace_file_path), 'Remote element returns None for namespaces'
+        )
+        self.assertIsNotNone(
+            get_remote_element(self.namespace_file_path, 'c'), 'Remote element returns None for "c"'
+        )
+
         remote_url = 'http://en.wikipedia.org/wiki/XML'
         self.assertIsNotNone(
-            get_remote_element(remote_url), 'Remote element returns None'
+            get_remote_element(remote_url), 'Remote element returns None for url'
         )
         self.assertIsNotNone(
             get_remote_element(remote_url, 'head'), 'Remote element returns None for "head"'
@@ -336,10 +357,12 @@ class XMLTests(XMLTestCase):
     def test_element_to_dict(self):
         """ Tests element to dictionary conversion on elements converted from different data sources """
 
-        base_dict = element_to_dict(self.elem_data_str, True)
+        self.assertEqual(element_to_dict(None), {}, 'None check failed for element_to_dict')
+
+        base_dict = element_to_dict(self.elem_data_str)
 
         for data in self.elem_data_inputs:
-            test_dict = element_to_dict(data, True)
+            test_dict = element_to_dict(data)
 
             self.assertEqual(
                 base_dict, test_dict,
@@ -348,10 +371,13 @@ class XMLTests(XMLTestCase):
             self.assert_elements_are_equal(dict_to_element(base_dict), dict_to_element(test_dict))
 
     def test_element_to_object(self):
+
         self._test_element_to_object()
 
     def _test_element_to_object(self):
         """ Tests element to object conversion on elements converted from different data sources """
+
+        self.assertEqual(element_to_object(None), (u'', {u'': {}}), 'None check failed for element_to_object')
 
         base_obj = element_to_object(self.elem_data_str)
 
@@ -379,15 +405,15 @@ class XMLTests(XMLTestCase):
             data_type = type(data).__name__
             element = get_element(data)
 
-            original_wout_dec = tostring(element)
-            original_with_dec = tostring(element, encoding=DEFAULT_ENCODING, method='xml')
+            original_wout_dec = element_to_string(element)
+            original_with_dec = element_to_string(element, encoding=DEFAULT_ENCODING, method='xml')
 
             self.assertEqual(
-                original_wout_dec.decode(encoding=DEFAULT_ENCODING), converted_wout_dec,
+                original_wout_dec, converted_wout_dec,
                 'With declaration check failed for element_to_string for {0}'.format(data_type)
             )
             self.assertEqual(
-                original_with_dec.decode(encoding=DEFAULT_ENCODING), converted_with_dec,
+                original_with_dec, converted_with_dec,
                 'Without declaration check failed for element_to_string for {0}'.format(data_type)
             )
 
@@ -413,6 +439,14 @@ class XMLTests(XMLTestCase):
         self.assertIsNone(iterparse_elements(None, None), 'None check failed for iter_elements')
         self.assertIsNone(iterparse_elements('', ''), 'Empty check failed for iter_elements')
 
+    def test_iterparse_elements_with_file(self):
+        self._test_iterparse_elements_op(self.elem_data_file)
+
+    def test_iterparse_elements_with_path(self):
+        self._test_iterparse_elements_op(self.elem_data_file_path)
+
+    def _test_iterparse_elements_op(self, elem_to_parse):
+
         base_attribs = {'x': 'xxx', 'y': 'yyy', 'z': 'zzz'}
         base_elem = fromstring('<a />')
 
@@ -427,7 +461,7 @@ class XMLTests(XMLTestCase):
                     elem, copy_element(elem, insert_element(base_elem, 0, self.elem_xpath))
                 )
 
-        iterparse_elements(iterparse_func, self.elem_data_file_path, **base_attribs)
+        iterparse_elements(iterparse_func, elem_to_parse, **base_attribs)
 
         existing_elem = fromstring(self.elem_data_str).find(self.elem_xpath)
         existing_elem.attrib = base_attribs
@@ -437,7 +471,26 @@ class XMLTests(XMLTestCase):
     def test_strip_namespaces(self):
         """ Tests namespace stripping by comparing equivalent XML from different data sources """
 
-        stripped = fromstring(strip_namespaces(self.namespace_file))
+        self.assertEqual(strip_namespaces(None), None, 'None check failed for strip_namespaces')
+
+        self._test_strip_namespaces(self.namespace_file)
+
+    def test_strip_namespaces_with_binary(self):
+        """ Tests namespace stripping by comparing equivalent XML from different data sources """
+
+        with open(self.namespace_file_path) as data:
+            self._test_strip_namespaces(data.read().encode())
+
+    def test_strip_namespaces_with_string(self):
+        """ Tests namespace stripping by comparing equivalent XML from different data sources """
+
+        with open(self.namespace_file_path) as data:
+            self._test_strip_namespaces(data.read())
+
+    def _test_strip_namespaces(self, to_strip):
+        """ Tests namespace stripping by comparing equivalent XML from different data sources """
+
+        stripped = fromstring(strip_namespaces(to_strip))
 
         for data in self.elem_data_inputs:
             self.assert_elements_are_equal(get_element(data), stripped)
@@ -681,7 +734,9 @@ class XMLPropertyTests(XMLTestCase):
             self.elem_xpath, default_target=[], element_path=self.elem_xpath
         )
 
-    def assert_element_property_setter(self, prop, elem_func, elem_xpath=None, default=None, target=[], **elem_kwargs):
+    def assert_element_property_setter(
+        self, prop, elem_func, elem_xpath=None, default=None, target=None, **elem_kwargs
+    ):
         """ Ensures the properties returned by the function are as expected for all data sources """
 
         self.assert_element_values_equal(prop, elem_func(None, **elem_kwargs), default)
@@ -694,10 +749,12 @@ class XMLPropertyTests(XMLTestCase):
             elems = self._wrap_property(elem_func(data, **elem_kwargs))
 
             for idx, val in enumerate((getattr(elem, prop) for elem in elems)):
-                self.assert_element_values_equal(prop, val, target[idx])
+                self.assert_element_values_equal(prop, val, target[idx] if target else u'')
 
-    def test_set_element_tail(self):
-        """ Tests set_element_tail with null and empty values, and with data from different sources """
+    def test_set_element_tail_none(self):
+        self.assert_element_property_setter(ELEM_TAIL, set_element_tail, target=[], element_tail=None)
+
+    def test_set_element_tail_one(self):
         self.assert_element_property_setter(ELEM_TAIL, set_element_tail, target='x', element_tail='x')
 
     def test_set_element_tail_xpath(self):
@@ -708,8 +765,10 @@ class XMLPropertyTests(XMLTestCase):
             self.elem_xpath, target='x', element_path=self.elem_xpath, element_tail='x'
         )
 
-    def test_set_element_text(self):
-        """ Tests set_element_text with null and empty values, and with data from different sources """
+    def test_set_element_text_none(self):
+        self.assert_element_property_setter(ELEM_TEXT, set_element_text, target=[], element_text=None)
+
+    def test_set_element_text_one(self):
         self.assert_element_property_setter(ELEM_TEXT, set_element_text, target='x', element_text='x')
 
     def test_set_element_text_xpath(self):
@@ -720,8 +779,13 @@ class XMLPropertyTests(XMLTestCase):
             self.elem_xpath, target='x', element_path=self.elem_xpath, element_text='x'
         )
 
-    def test_set_elements_text(self):
-        """ Tests set_elements_text with null and empty values, and with data from different sources """
+    def test_set_elements_text_none(self):
+        self.assert_element_property_setter(ELEM_TEXT, set_elements_text, default=[], target=[], text_values=None)
+
+    def test_set_elements_text_str(self):
+        self.assert_element_property_setter(ELEM_TEXT, set_elements_text, default=[], target=['x'], text_values='x')
+
+    def test_set_elements_text_list(self):
         self.assert_element_property_setter(ELEM_TEXT, set_elements_text, default=[], target=['x'], text_values=['x'])
 
     def test_set_elements_texts(self):
@@ -743,8 +807,7 @@ class XMLPropertyTests(XMLTestCase):
 
     def test_set_elements_texts_xpath(self):
         """
-        Tests set_elements_text with an XPATH with null, empty and multiple valid values,
-        and with data from different sources
+        Tests set_elements_text with an XPATH with both invalid and valid values, and with data from different sources
         """
         target = ['x', 'y', 'z']
         elem_xpath = self.elem_xpath
@@ -754,8 +817,17 @@ class XMLPropertyTests(XMLTestCase):
             elem_xpath, default=[], target=target, element_path=elem_xpath, text_values=target
         )
 
-    def test_set_elements_tail(self):
-        """ Tests set_elements_tail with null and empty values, and with data from different sources """
+    def test_set_elements_tail_none(self):
+        self.assert_element_property_setter(ELEM_TAIL,
+            set_elements_tail, default=[], target=[], tail_values=None
+        )
+
+    def test_set_elements_tail_str(self):
+        self.assert_element_property_setter(ELEM_TAIL,
+            set_elements_tail, default=[], target=['x'], tail_values='x'
+        )
+
+    def test_set_elements_tail_list(self):
         self.assert_element_property_setter(ELEM_TAIL,
             set_elements_tail, default=[], target=['x'], tail_values=['x']
         )
@@ -1055,11 +1127,68 @@ class XMLInsertRemoveTests(XMLTestCase):
         self.assert_elements_removed('test_remove_elements_multiple_clear', elem_xpaths, clear_empty=True)
 
     def test_remove_empty_element(self):
-        parent_to_parse = '<a/>'
-        element_path = ''
-        target_element = ''
-        remove_empty_element(parent_to_parse, element_path, target_element)
 
+        # Ensure nothing is done when there are no children
+        self.assertEqual(remove_empty_element(parent_to_parse='<a/>', element_path=''), [])
 
-if __name__ == '__main__':
-    unittest.main()
+        # Ensure nothing is done when there are children, but no xpath
+        self.assertEqual(remove_empty_element(parent_to_parse='<a><b/></a>', element_path=''), [])
+
+        # Ensure a single element is removed and returned
+        one_child = remove_empty_element(parent_to_parse='<a><b/></a>', element_path='b')
+        self.assertEqual(len(one_child), 1)
+        self.assertEqual(one_child[0].tag, 'b')
+
+        # Ensure nothing is done when there are attributes
+        self.assertEqual(remove_empty_element(parent_to_parse='<a><b x="xxx" /></a>', element_path='b'), [])
+        # Ensure nothing is done when there is text
+        self.assertEqual(remove_empty_element(parent_to_parse='<a><b>bbb</b></a>', element_path='b'), [])
+        # Ensure nothing is done when there is a tail
+        self.assertEqual(remove_empty_element(parent_to_parse='<a><b/>bbb</a>', element_path='b'), [])
+        # Ensure nothing is done when there are children
+        self.assertEqual(remove_empty_element(parent_to_parse='<a><b><c/><d/></b></a>', element_path='b'), [])
+
+        # Ensure all elements are removed when stacked
+        stacked_children = remove_empty_element(parent_to_parse='<a><b><c><d/></c></b></a>', element_path='b/c/d')
+        self.assertEqual(len(stacked_children), 3)
+        self.assertEqual({d.tag for d in stacked_children}, {'b', 'c', 'd'})
+
+        # Ensure only the (first) child specified is removed
+        nested_child = remove_empty_element(parent_to_parse='<a><b><c/><d/></b></a>', element_path='b/c')
+        self.assertEqual(len(nested_child), 1)
+        self.assertEqual(nested_child[0].tag, 'c')
+
+        # Ensure only the (second) child specified is removed
+        nested_child = remove_empty_element(parent_to_parse='<a><b><c/><d/></b></a>', element_path='b/d')
+        self.assertEqual(len(nested_child), 1)
+        self.assertEqual(nested_child[0].tag, 'd')
+
+        # Ensure only the (first) empty child is removed when it precedes another
+        nested_child = remove_empty_element(parent_to_parse='<a><b><c/><c>ccc</c><d/></b></a>', element_path='b/c')
+        self.assertEqual(len(nested_child), 1)
+        self.assertEqual(nested_child[0].tag, 'c')
+
+        # Ensure only the (first) empty child is removed when it follows another
+        nested_child = remove_empty_element(parent_to_parse='<a><b><c>ccc</c><c/><d/></b></a>', element_path='b/c')
+        self.assertEqual(len(nested_child), 1)
+        self.assertEqual(nested_child[0].tag, 'c')
+
+        # Ensure both (first) empty children are removed
+        nested_child = remove_empty_element(parent_to_parse='<a><b><c/><c/><d/></b></a>', element_path='b/c')
+        self.assertEqual(len(nested_child), 2)
+        self.assertEqual(''.join(c.tag for c in nested_child), 'c' * 2)
+
+        # Ensure only the (second) empty child is removed when it precedes another
+        nested_child = remove_empty_element(parent_to_parse='<a><b><c/><d/><d>ddd</d></b></a>', element_path='b/d')
+        self.assertEqual(len(nested_child), 1)
+        self.assertEqual(nested_child[0].tag, 'd')
+
+        # Ensure only the (second) empty child is removed when it follows another
+        nested_child = remove_empty_element(parent_to_parse='<a><b><c/><d>ddd</d><d/></b></a>', element_path='b/d')
+        self.assertEqual(len(nested_child), 1)
+        self.assertEqual(nested_child[0].tag, 'd')
+
+        # Ensure all three (second) empty children are removed
+        nested_child = remove_empty_element(parent_to_parse='<a><b><c/><d/><d/><d/></b></a>', element_path='b/d')
+        self.assertEqual(len(nested_child), 3)
+        self.assertEqual(''.join(d.tag for d in nested_child), 'd' * 3)

@@ -1,5 +1,3 @@
-import unittest
-
 from parserutils.tests.collection_tests import DictsTestCase, ListTupleSetTestCase
 from parserutils.tests.date_tests import DateTestCase
 from parserutils.tests.element_tests import XMLCheckTests, XMLInsertRemoveTests, XMLPropertyTests, XMLTests
@@ -30,7 +28,3 @@ class StringsTestCase(StringCasingTestCase, StringConversionTestCase):
 
 class URLParsingTestCase(URLTestCase):
     """ Consolidates all url_tests for ease of execution """
-
-
-if __name__ == '__main__':
-    unittest.main()

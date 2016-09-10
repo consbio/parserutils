@@ -22,7 +22,7 @@ def parse_dates(d, default='today'):
         return datetime.datetime.utcfromtimestamp(d)
     elif not isinstance(d, (binary_type, string_types)):
         if hasattr(d, '__iter__'):
-            return [parse_dates(s) for s in d]
+            return [parse_dates(s, default) for s in d]
         else:
             return default
     elif len(d) == 0:

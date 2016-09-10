@@ -66,10 +66,7 @@ def to_ascii_equivalent(text):
     elif isinstance(text, binary_type):
         text = text.decode('utf-8')
     elif not isinstance(text, text_type):
-        try:
-            text = text_type(text)
-        except UnicodeDecodeError:
-            text = text.decode('utf-8')
+        text = text_type(text)
 
     text = EMPTY_STR.join(_ASCII_PUNCTUATION_MAP.get(c, c) for c in text)
     return EMPTY_STR.join(c for c in unicodedata.normalize('NFD', text) if unicodedata.category(c) != 'Mn')

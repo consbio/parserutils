@@ -170,7 +170,3 @@ class URLTestCase(unittest.TestCase):
 
         # Convert defaultdict to dict, unwrapping single parameter values as well
         return base_url, {k: reduce_value(v) for k, v in six.iteritems(params)}
-
-
-if __name__ == '__main__':
-    unittest.main()

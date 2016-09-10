@@ -140,9 +140,16 @@ class StringConversionTestCase(unittest.TestCase):
             u'\ufe11', u'\ufe10', u'\ufe50',  # Commas
             u'\ufe51', u'\uff64', u'\uff0c',  # Commas
         ]
+        ascii_issues = u''.join(_ASCII_PUNCTUATION_MAP[c] for c in known_issues)
+        joined_issues = u''.join(known_issues)
+
+        self.assertEqual(to_ascii_equivalent(joined_issues), ascii_issues)
         for issue in known_issues:
             self.assertEqual(to_ascii_equivalent(issue), _ASCII_PUNCTUATION_MAP[issue])
 
+        # Test non-strings
 
-if __name__ == '__main__':
-    unittest.main()
+        self.assertEqual(to_ascii_equivalent(True), 'True')
+        self.assertEqual(to_ascii_equivalent(0), '0')
+        self.assertEqual(to_ascii_equivalent(1.1), '1.1')
+        self.assertEqual(to_ascii_equivalent(dict()), '{}')

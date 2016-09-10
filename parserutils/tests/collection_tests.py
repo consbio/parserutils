@@ -375,7 +375,3 @@ class ListTupleSetTestCase(unittest.TestCase):
         values = (0, 1, 'a', 'abc', {'a': 'aaa'}, {'b': 'bbb', 'c': 'ccc'})
         for value in values:
             self.assertEqual(reduce_value(wrap_value(value)), value)
-
-
-if __name__ == '__main__':
-    unittest.main()

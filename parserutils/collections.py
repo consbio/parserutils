@@ -39,8 +39,6 @@ def setdefaults(d, defaults):
 
         if isinstance(defs, string_types):
             return [defs.split('.', 1) if '.' in defs else (defs, None)]
-        elif isinstance(defs, dict):
-            return to_key_val_pairs([defs])
         else:
             pairs = []
             pairs.extend(p for s in defs if isinstance(s, string_types) for p in to_key_val_pairs(s))

@@ -426,9 +426,7 @@ def remove_empty_element(parent_to_parse, element_path, target_element=None):
 
             # Parent may be empty now: recursively remove empty elements in XPATH
             if element_is_empty(parent):
-                if not element_path:
-                    removed.extend(remove_empty_element(element, target_element))
-                elif len(xpath_segments) == 2:
+                if len(xpath_segments) == 2:
                     removed.extend(remove_empty_element(element, xpath_segments[0]))
                 else:
                     next_element_path = XPATH_DELIM.join(xpath_segments[:-2])
@@ -648,7 +646,7 @@ def _set_element_property(parent_to_parse, element_path, prop_name, value):
     return element
 
 
-def set_elements_tail(parent_to_parse, element_path=None, tail_values=[]):
+def set_elements_tail(parent_to_parse, element_path=None, tail_values=None):
     """
     Assigns an array of tail values to each of the elements parsed from the parent. The
     tail values are assigned in the same order they are provided.
@@ -656,16 +654,22 @@ def set_elements_tail(parent_to_parse, element_path=None, tail_values=[]):
     there are more, new elements will be inserted for each with the remaining tail values.
     """
 
+    if tail_values is None:
+        tail_values = []
+
     return _set_elements_property(parent_to_parse, element_path, _ELEM_TAIL, tail_values)
 
 
-def set_elements_text(parent_to_parse, element_path=None, text_values=[]):
+def set_elements_text(parent_to_parse, element_path=None, text_values=None):
     """
     Assigns an array of text values to each of the elements parsed from the parent. The
     text values are assigned in the same order they are provided.
     If there are less values then elements, the remaining elements are skipped; but if
     there are more, new elements will be inserted for each with the remaining text values.
     """
+
+    if text_values is None:
+        text_values = []
 
     return _set_elements_property(parent_to_parse, element_path, _ELEM_TEXT, text_values)
 
@@ -785,8 +789,9 @@ def element_to_object(elem_to_parse):
 
     element_tree = get_element_tree(elem_to_parse)
     element_root = element_tree.getroot()
+    root_tag = u'' if element_root is None else element_root.tag
 
-    return element_root.tag, {element_root.tag: _element_to_object(element_root)}
+    return root_tag, {root_tag: _element_to_object(element_root)}
 
 
 def _element_to_object(element):
@@ -799,9 +804,7 @@ def _element_to_object(element):
             obj_key = '_'.join((tag, key)) if tag and key in _OBJ_PROPERTIES else key
             obj_val = val.strip() if isinstance(val, string_types) else val
 
-            if val is None:
-                continue
-            elif obj_key not in obj:
+            if obj_key not in obj:
                 obj[obj_key] = obj_val
             elif isinstance(obj[obj_key], list):
                 obj[obj_key].append(obj_val)
