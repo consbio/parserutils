@@ -19,7 +19,7 @@ Install with `pip install parserutils`.
 #Usage#
 
 Here's what you can do with `dict` objects and other collections.
-```
+```python
 from parserutils import collections
 
 collections.accumulate([('key', 'val1'), ('key', 'val2'), ('key', 'val3')])   # {'key': ['val1', 'val2', 'val3']}
@@ -35,7 +35,7 @@ collections.setdefaults({}, {'a.b': 'bbb', 'a.c': 'ccc'})  # {'a': {'b': 'bbb', 
 ```
 
 Here's a little bit about dates and numbers.
-```
+```python
 from parserutils import dates
 from parserutils import numbers
 
@@ -59,7 +59,7 @@ numbers.is_number(float('nan'))         # NaN: False
 ```
 
 Here's something about string and URL parsing helpers.
-```
+```python
 from parserutils import strings
 from parserutils import urls
 
@@ -93,45 +93,45 @@ urls.update_url_params('http://www.params.com', c=['c', 'cc'])  # 'http://www.pa
 ```
 
 Finally, XML parsing is also supported, using the cElementTree and defusedxml libraries for performance and security
-```
+```python
 from parserutils import elements
 
+# First convert an XML string to an Element object
 xml_string = '<root><parent><child>one</child><child>two</child><uglyChild>yuck</uglyChild></parent></root>'
-xml_element =  elements.get_element(xml_string)
+xml_element = elements.get_element(xml_string)
 
 
-# Update an XML string and print it back out
+# Update the XML string and print it back out
 elements.set_element_text(xml_element, 'parent/child', 'child text')
 elements.set_element_attributes(xml_element, childHas='child attribute')
 elements.remove_element(xml_element, 'parent/uglyChild')
 elements.element_to_string(xml_element)
 
 
-# Conversion to element from dict, and from dict back to string
+# Conversion from string to Element, to dict, and then back to string
 converted = elements.element_to_dict(xml_string, recurse=True)
 reverted = elements.dict_to_element(converted)
 reverted = elements.get_element(converted)
 xml_string == elements.element_to_string(converted)
 
 
-# Conversion to flattened object
+# Conversion to flattened dict object
 root, obj = elements.element_to_object(converted)
 obj == {'root': {'parent': {'child': ['one', 'two'], 'uglyChild': 'yuck'}}}
 
 
-# Read in an XML file and write it elswhere
+# Read in an XML file and write it elsewhere
 with open('/path/to/file.xml', 'wb') as xml:
     xml_from_file = elements.get_element(xml)
     elements.write_element(xml_from_file, '/path/to/updated/file.xml')
 
 
-# Write a local file from a remote location
+# Write a local file from a remote location (via URL)
 xml_from_web = elements.get_remote_element('http://en.wikipedia.org/wiki/XML')
 elements.write_element(xml_from_web, '/path/to/new/file.xml')
 
 
-# Read content at a local filepath to a string
+# Read content at a local file path to a string
 xml_from_path = elements.get_remote_element('/path/to/file.xml')
 elements.element_to_string(xml_from_path)
 ```
-
