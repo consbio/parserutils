@@ -1,6 +1,6 @@
 # parserutils
 
-[![Build Status](https://travis-ci.org/consbio/parserutils.png?branch=master)](https://travis-ci.org/consbio/parserutils)
+[![Build Status](https://travis-ci.org/consbio/parserutils.png?branch=master)](https://travis-ci.org/consbio/parserutils)[![Coverage Status](https://coveralls.io/repos/github/consbio/parserutils/badge.svg?branch=master)](https://coveralls.io/github/consbio/parserutils?branch=master)
 
 This is a library of utility functions designed to make a developer's life easier.
 
