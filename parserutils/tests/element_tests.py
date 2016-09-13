@@ -31,7 +31,7 @@ class XMLTestCase(unittest.TestCase):
     def setUp(self):
         sep = os.path.sep
         dir_name = os.path.dirname(os.path.abspath(__file__))
-        self.data_dir = os.path.sep.join((dir_name, 'data'))
+        self.data_dir = sep.join((dir_name, 'data'))
 
         self.elem_data_file_path = sep.join((self.data_dir, 'elem_data.xml'))
         self.namespace_file_path = sep.join((self.data_dir, 'namespace_data.xml'))
