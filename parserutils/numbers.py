@@ -2,7 +2,7 @@ from math import isnan, isinf
 
 
 def is_number(num, if_bool=False):
-    """ :return: True if 's' is an actual number, or an object that represents one """
+    """ :return: True if num is either an actual number, or an object that converts to one """
 
     if isinstance(num, bool):
         return if_bool

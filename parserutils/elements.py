@@ -3,7 +3,7 @@ Encapsulates all implementation specific functionality for XML parsing
 Contains an API defining all operations executable against an XML tree
 """
 
-import re as regex
+import re
 import six
 
 from six import binary_type, iteritems, string_types, text_type
@@ -12,23 +12,21 @@ from defusedxml.cElementTree import fromstring, tostring
 from defusedxml.cElementTree import iterparse
 from xml.etree.cElementTree import ElementTree, Element
 from xml.etree.cElementTree import iselement
-
+from parserutils.strings import DEFAULT_ENCODING, _STRING_TYPES
 
 ElementType = type(Element(None))  # Element module doesn't have a type
 
 
-ABS_FILE_REGEX = {
+XPATH_DELIM = '/'
+
+_ABS_FILE_REGEX = {
     'lin': r'/',
     'win': r'([A-Za-z]{1}:[\/\\]{1})|([\\]{2})'
 }
-
-DEFAULT_ENCODING = 'UTF-8'
-
-FILE_LOC_REGEX = r'^({win})|({lin})'.format(**ABS_FILE_REGEX)
-FTP_FILE_REGEX = r'^ftp'
-PROTOCOL_REGEX = r'^(\w+://)*'
-
-XPATH_DELIM = '/'
+_FILE_LOCATION_REGEX = re.compile(r'^({win})|({lin})'.format(**_ABS_FILE_REGEX))
+_NAMESPACES_FROM_DEC_REGEX = re.compile(r"""(<[^>]*)\sxmlns[^"'>]+["'][^"'>]+["']""")
+_NAMESPACES_FROM_TAG_REGEX = re.compile(r'(</?)[\w\-.]+:')
+_NAMESPACES_FROM_ATTR_REGEX = re.compile(r'(\s+)([\w\-.]+:)([\w\-.]+\s*=)')
 
 _ELEM_NAME = 'name'
 _ELEM_TEXT = 'text'
@@ -194,7 +192,7 @@ def get_remote_element(url, element_path=None):
 
     if url is None:
         return content
-    elif regex.match(FILE_LOC_REGEX, url):
+    elif _FILE_LOCATION_REGEX.match(url):
         with open(url, 'rb') as xml:
             content = xml.read()
     else:
@@ -784,7 +782,7 @@ def element_to_object(elem_to_parse):
     }}
     """
 
-    if isinstance(elem_to_parse, (binary_type, string_types)) or hasattr(elem_to_parse, 'read'):
+    if isinstance(elem_to_parse, _STRING_TYPES) or hasattr(elem_to_parse, 'read'):
         elem_to_parse = strip_namespaces(elem_to_parse)
 
     element_tree = get_element_tree(elem_to_parse)
@@ -922,17 +920,15 @@ def strip_namespaces(file_or_xml):
     else:
         return file_or_xml
 
-    # Remove namespace declarations from root tag
-    pattern = r"""(<[^>]*)\sxmlns[^"'>]+["'][^"'>]+["']"""
     # This pattern can have overlapping matches, necessitating the loop
-    while regex.search(pattern, xml_content) is not None:
-        xml_content = regex.sub(pattern, '\\1', xml_content)
+    while _NAMESPACES_FROM_DEC_REGEX.search(xml_content) is not None:
+        xml_content = _NAMESPACES_FROM_DEC_REGEX.sub('\\1', xml_content)
 
     # Remove namespaces at the tag level
-    xml_content = regex.sub(r'(</?)[\w\-.]+:', r'\1', xml_content)
+    xml_content = _NAMESPACES_FROM_TAG_REGEX.sub(r'\1', xml_content)
 
     # Remove namespaces at the attribute level
-    xml_content = regex.sub(r'(\s+)([\w\-.]+:)([\w\-.]+\s*=)', r'\1\3', xml_content)
+    xml_content = _NAMESPACES_FROM_ATTR_REGEX.sub(r'\1\3', xml_content)
 
     return xml_content
 
