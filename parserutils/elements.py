@@ -735,7 +735,7 @@ def dict_to_element(element_as_dict):
     return converted
 
 
-def element_to_dict(elem_to_parse, recurse=True):
+def element_to_dict(elem_to_parse, element_path=None, recurse=True):
     """
     :return: an element losslessly as a dictionary. If recurse is True,
     the element's children are included, otherwise they are omitted.
@@ -748,7 +748,7 @@ def element_to_dict(elem_to_parse, recurse=True):
         - children: a List of converted child elements
     """
 
-    element = get_element(elem_to_parse)
+    element = get_element(elem_to_parse, element_path)
 
     if element is not None:
         converted = {
@@ -761,14 +761,14 @@ def element_to_dict(elem_to_parse, recurse=True):
 
         if recurse is True:
             for child in element:
-                converted[_ELEM_CHILDREN].append(element_to_dict(child, recurse))
+                converted[_ELEM_CHILDREN].append(element_to_dict(child, recurse=recurse))
 
         return converted
 
     return {}
 
 
-def element_to_object(elem_to_parse):
+def element_to_object(elem_to_parse, element_path=None):
     """
     :return: the root key, and a dict with all the XML data, but without preserving structure, for instance:
 
@@ -783,7 +783,11 @@ def element_to_object(elem_to_parse):
     """
 
     if isinstance(elem_to_parse, _STRING_TYPES) or hasattr(elem_to_parse, 'read'):
+        # Always strip namespaces if not already parsed
         elem_to_parse = strip_namespaces(elem_to_parse)
+
+    if element_path is not None:
+        elem_to_parse = get_element(elem_to_parse, element_path)
 
     element_tree = get_element_tree(elem_to_parse)
     element_root = element_tree.getroot()

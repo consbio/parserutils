@@ -333,31 +333,50 @@ class XMLTests(XMLTestCase):
         self.assertEqual(element_to_dict(None), {}, 'None check failed for element_to_dict')
 
         base_dict = element_to_dict(self.elem_data_str)
+        base_elem = get_element(self.elem_data_str)
 
         for data in self.elem_data_inputs:
             test_dict = element_to_dict(data)
 
+            # Test conversion to and from for each data input
             self.assertEqual(
-                base_dict, test_dict,
-                'Converted dictionary equality check failed for {0}'.format(type(data).__name__)
+                base_dict, test_dict, 'Converted dictionary equality check failed for {0}'.format(type(data).__name__)
             )
-            self.assert_elements_are_equal(dict_to_element(base_dict), dict_to_element(test_dict))
+            self.assert_elements_are_equal(base_elem, dict_to_element(test_dict))
+
+            # Test conversion to and from for each data input with element path
+            for elem in base_elem:
+                test_child = [c for c in test_dict['children'] if c['name'] == elem.tag][0]
+                self.assertEqual(element_to_dict(base_elem, elem.tag), test_child)
+                self.assert_elements_are_equal(elem, dict_to_element(test_child))
+
+        # Test conversion with element path for each sub-element
+        for elem in base_elem:
+            self.assertEqual(
+                element_to_dict(base_elem, elem.tag),
+                element_to_dict(get_element(base_elem, elem.tag))
+            )
 
     def test_element_to_object(self):
-
-        self._test_element_to_object()
-
-    def _test_element_to_object(self):
         """ Tests element to object conversion on elements converted from different data sources """
 
         self.assertEqual(element_to_object(None), (u'', {u'': {}}), 'None check failed for element_to_object')
 
+        base_elem = get_element(self.elem_data_str)
         base_obj = element_to_object(self.elem_data_str)
 
+        # Test conversion to object for each data input
         for data in self.elem_data_inputs:
+            test_obj = element_to_object(data)
             self.assertEqual(
-                base_obj, element_to_object(data),
-                'Converted object equality check failed for {0}'.format(type(data).__name__)
+                base_obj, test_obj, 'Converted object equality check failed for {0}'.format(type(data).__name__)
+            )
+
+        # Test conversion with element path for each sub-element
+        for elem in base_elem:
+            self.assertEqual(
+                element_to_object(base_elem, elem.tag),
+                element_to_object(get_element(base_elem, elem.tag))
             )
 
     def test_element_to_string(self):
