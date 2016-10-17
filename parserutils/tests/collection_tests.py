@@ -1,7 +1,7 @@
 import unittest
 
 from parserutils.collections import accumulate, setdefaults
-from parserutils.collections import filter_empty, reduce_value, wrap_value
+from parserutils.collections import filter_empty, flatten_items, reduce_value, wrap_value
 from parserutils.strings import EMPTY_BIN, EMPTY_STR
 
 
@@ -201,6 +201,8 @@ class ListTupleSetTestCase(unittest.TestCase):
         self.assertEqual(filter_empty(tuple(), 'None'), 'None')
 
         # Test when there's nothing to filter
+        self.assertEqual(filter_empty(False), False)
+        self.assertEqual(filter_empty(True), True)
         self.assertEqual(filter_empty(0), 0)
         self.assertEqual(filter_empty(1), 1)
         self.assertEqual(filter_empty('a'), 'a')
@@ -209,10 +211,10 @@ class ListTupleSetTestCase(unittest.TestCase):
         self.assertEqual(filter_empty({'b': 'bbb', 'c': 'ccc'}), {'b': 'bbb', 'c': 'ccc'})
 
         # Test when there's nothing to filter, but with unused default
-        self.assertEqual(filter_empty(0, None), 0)
-        self.assertEqual(filter_empty(1, None), 1)
-        self.assertEqual(filter_empty('a', None), 'a')
-        self.assertEqual(filter_empty('abc', None), 'abc')
+        self.assertEqual(filter_empty(0, '0'), 0)
+        self.assertEqual(filter_empty(1, '1'), 1)
+        self.assertEqual(filter_empty('a', 'None'), 'a')
+        self.assertEqual(filter_empty('abc', 'None'), 'abc')
 
         # Test with filterable values
         self.assertEqual(filter_empty([None]), None)
@@ -249,6 +251,106 @@ class ListTupleSetTestCase(unittest.TestCase):
         # Test with non-filterable collections
         self.assertEqual(filter_empty({'a': 'aaa'}), {'a': 'aaa'})
         self.assertEqual([x for x in filter_empty(c for c in 'abc')], [c for c in 'abc'])
+
+    def test_flatten_items(self):
+        """ Tests flatten_items with general inputs """
+
+        # Test None case: nothing to filter but default applies
+        self.assertEqual(flatten_items(None), None)
+        self.assertEqual(flatten_items(None, True), None)
+
+        # Test empty string case: nothing to filter but default applies
+        self.assertEqual(flatten_items(EMPTY_BIN), EMPTY_BIN)
+        self.assertEqual(flatten_items(EMPTY_BIN, True), EMPTY_BIN)
+        self.assertEqual(flatten_items(EMPTY_STR), EMPTY_STR)
+        self.assertEqual(flatten_items(EMPTY_STR, True), EMPTY_STR)
+        self.assertEqual(flatten_items(dict()), dict())
+        self.assertEqual(flatten_items(dict(), True), dict())
+
+        # Test empty collections case: nothing to flatten but default applies
+        self.assertEqual(flatten_items(list()), list())
+        self.assertEqual(flatten_items(list(), True), list())
+        self.assertEqual(flatten_items(set()), set())
+        self.assertEqual(flatten_items(set(), True), set())
+        self.assertEqual(flatten_items(tuple()), tuple())
+        self.assertEqual(flatten_items(tuple(), True), tuple())
+
+        # Test when there's nothing to flatten
+        self.assertEqual(flatten_items(False), False)
+        self.assertEqual(flatten_items(False, True), False)
+        self.assertEqual(flatten_items(True), True)
+        self.assertEqual(flatten_items(True, True), True)
+        self.assertEqual(flatten_items(0), 0)
+        self.assertEqual(flatten_items(0, True), 0)
+        self.assertEqual(flatten_items(1), 1)
+        self.assertEqual(flatten_items(1, True), 1)
+        self.assertEqual(flatten_items('a'), 'a')
+        self.assertEqual(flatten_items('a', True), 'a')
+        self.assertEqual(flatten_items('abc'), 'abc')
+        self.assertEqual(flatten_items('abc', True), 'abc')
+        self.assertEqual(flatten_items({'a': 'aaa'}), {'a': 'aaa'})
+        self.assertEqual(flatten_items({'a': 'aaa'}, True), {'a': 'aaa'})
+        self.assertEqual(flatten_items({'b': 'bbb', 'c': 'ccc'}), {'b': 'bbb', 'c': 'ccc'})
+        self.assertEqual(flatten_items({'b': 'bbb', 'c': 'ccc'}, True), {'b': 'bbb', 'c': 'ccc'})
+
+        # Test with single value collections with nothing to flatten, without defaults
+        for flat in (None, EMPTY_BIN, EMPTY_STR, 'abc', 0, 1, True, False):
+            self.assertEqual(flatten_items([flat]), [flat])
+            self.assertEqual(flatten_items([flat], True), [flat])
+
+            self.assertEqual(flatten_items({flat}), {flat})
+            self.assertEqual(flatten_items({flat}, True), {flat})
+            self.assertEqual(flatten_items((flat,)), (flat,))
+            self.assertEqual(flatten_items((flat,), True), (flat,))
+
+            self.assertEqual(flatten_items(f for f in [flat]), [flat])
+            self.assertEqual(flatten_items((f for f in (flat,)), True), [flat])
+
+        # Test with multiple values with nothing to flatten
+        for flat in ([None, EMPTY_BIN, EMPTY_STR], (False, True, 0, 1, 'a'), {'False', 'True', '0', '1', 'a'}):
+            for flat_type in (list, tuple, set):
+                flat_in = flat_type(flat)
+                flat_out = flat_in
+
+                self.assertEqual(flatten_items(flat_in), flat_out)
+                self.assertEqual(flatten_items(flat_in, True), flat_out)
+
+                self.assertEqual(flatten_items(f for f in flat_in), list(flat_out))
+                self.assertEqual(flatten_items((f for f in flat_in), True), list(flat_out))
+
+        # Test with collection values (some unhashable) that should be flattened, but not recursed
+
+        for flat_type in (list, tuple):
+            flat_in = flat_type([tuple(), 'a', set(), 'bc', list(), b'xyz', dict()])
+            flat_out = flat_in
+
+            self.assertEqual(flatten_items(flat_in), flat_out)
+            self.assertEqual(flatten_items(flat_in, True), flat_out)
+
+            self.assertEqual(flatten_items(f for f in flat_in), list(flat_out))
+            self.assertEqual(flatten_items((f for f in flat_in), True), list(flat_out))
+
+        # Test with values that should be flattened and recursed in many combinations
+
+        self.assertEqual(flatten_items([('a', 'b', 'c'), 'd', {'e'}, ['f', 'g']]), ['a', 'b', 'c', 'd', 'e', 'f', 'g'])
+        self.assertEqual(flatten_items((0, [1, 2, 3], 4, 5, {6}, 7)), (0, 1, 2, 3, 4, 5, 6, 7))
+        self.assertEqual(
+            flatten_items(x for x in ((False, True), {'xyz'}, 7, 8, 9, ['10'])), [False, True, 'xyz', 7, 8, 9, '10']
+        )
+
+        not_yet_flat = [tuple(c for c in 'abc'), 'd', list(c for c in '123'), [None, {False}, {True}]]
+
+        for flat_type in (list, tuple):
+            flat_to_recurse = flat_type(not_yet_flat)
+
+            flat_no_recurse = flat_type(['a', 'b', 'c', 'd', '1', '2', '3', None, {False}, {True}])
+            flat_after_recurse = flat_type(['a', 'b', 'c', 'd', '1', '2', '3', None, False, True])
+
+            self.assertEqual(flatten_items(flat_to_recurse), flat_no_recurse)
+            self.assertEqual(flatten_items(flat_to_recurse, True), flat_after_recurse)
+
+            self.assertEqual(flatten_items(f for f in flat_to_recurse), list(flat_no_recurse))
+            self.assertEqual(flatten_items((f for f in flat_to_recurse), True), list(flat_after_recurse))
 
     def test_reduce_value(self):
         """ Tests reduce_value with general inputs """

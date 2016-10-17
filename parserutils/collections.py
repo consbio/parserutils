@@ -1,7 +1,8 @@
 from _collections import defaultdict
 
 from six import iteritems, string_types
-from parserutils.strings import EMPTY_STR
+
+from parserutils.strings import EMPTY_STR, _STRING_TYPES
 
 
 # DICT FUNCTIONS #
@@ -89,18 +90,47 @@ def filter_empty(values, default=None):
     If values is None or empty after filtering, the default is returned.
     """
 
-    def is_empty(val):
-        return hasattr(val, '__len__') and len(val) == 0
-
     if values is None:
         return default
-    elif is_empty(values):
+    elif hasattr(values, '__len__') and len(values) == 0:
         return default
-    elif isinstance(values, (list, tuple, set)):
-        values = type(values)(v for v in values if not (v is None or is_empty(v)))
-        return default if is_empty(values) else values
+    elif isinstance(values, _filter_types):
+        values = type(values)(
+            v for v in values
+            if not (v is None or (hasattr(v, '__len__') and len(v) == 0))
+        )
+        return default if hasattr(values, '__len__') and len(values) == 0 else values
 
     return values
+
+_filter_types = (list, tuple, set)
+
+
+def flatten_items(items, recurse=False):
+    """
+    Expands inner lists (tuples, sets, Etc.) within items so that each extends its parent.
+    If items is None or empty after filtering, the default is returned.
+    If recurse is False, only the first level of items is flattened, otherwise all levels.
+    """
+
+    if not items:
+        return items
+    elif not hasattr(items, '__iter__'):
+        return items
+    elif isinstance(items, _flattened_types):
+        return items
+
+    flattened = []
+    for item in items:
+        if item and hasattr(item, '__iter__') and not isinstance(item, _flattened_types):
+            flattened.extend(flatten_items(item, True) if recurse else item)
+        else:
+            flattened.append(item)
+
+    return type(items)(flattened) if isinstance(items, _flatten_types) else flattened
+
+_flatten_types = (tuple, set)
+_flattened_types = (dict,) + _STRING_TYPES
 
 
 def reduce_value(value, default=EMPTY_STR):
@@ -116,10 +146,12 @@ def reduce_value(value, default=EMPTY_STR):
         elif vlen == 1:
             if isinstance(value, set):
                 return value.pop()
-            elif isinstance(value, (list, tuple)):
+            elif isinstance(value, _reduce_types):
                 return value[0]
 
     return default if value is None else value
+
+_reduce_types = (list, tuple)
 
 
 def wrap_value(value, include_empty=False):
@@ -132,9 +164,11 @@ def wrap_value(value, include_empty=False):
         return [None] if include_empty else []
     elif hasattr(value, '__len__') and len(value) == 0:
         return [value] if include_empty else []
-    elif isinstance(value, (string_types, dict)):
+    elif isinstance(value, _wrap_types):
         return [value]
     elif not hasattr(value, '__iter__'):
         return [value]
 
     return value if include_empty else filter_empty(value, [])
+
+_wrap_types = (dict,) + _STRING_TYPES
