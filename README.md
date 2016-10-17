@@ -31,7 +31,7 @@ collections.setdefaults({}, 'a.b')                         # {'a': {'b': None}}
 collections.setdefaults({}, ['a.b', 'a.c'])                # {'a': {'b': None, 'c': None}}
 collections.setdefaults({}, {'a.b': 'bbb', 'a.c': 'ccc'})  # {'a': {'b': 'bbb', 'c': 'ccc'}}
 
-# Also see: collections.filter_empty, collections.reduce_value, collections.wrap_value
+# Also see: collections.filter_empty, flatten_items, reduce_value, wrap_value
 ```
 
 Here's a little bit about dates and numbers.
