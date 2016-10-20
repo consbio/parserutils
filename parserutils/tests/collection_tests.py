@@ -199,6 +199,8 @@ class ListTupleSetTestCase(unittest.TestCase):
         self.assertEqual(filter_empty(set(), 'None'), 'None')
         self.assertEqual(filter_empty(tuple()), None)
         self.assertEqual(filter_empty(tuple(), 'None'), 'None')
+        self.assertEqual(filter_empty(x for x in ''), None)
+        self.assertEqual(filter_empty((x for x in ''), 'None'), 'None')
 
         # Test when there's nothing to filter
         self.assertEqual(filter_empty(False), False)
@@ -209,12 +211,15 @@ class ListTupleSetTestCase(unittest.TestCase):
         self.assertEqual(filter_empty('abc'), 'abc')
         self.assertEqual(filter_empty({'a': 'aaa'}), {'a': 'aaa'})
         self.assertEqual(filter_empty({'b': 'bbb', 'c': 'ccc'}), {'b': 'bbb', 'c': 'ccc'})
+        self.assertEqual(filter_empty(c for c in 'abc'), ['a', 'b', 'c'])
+        self.assertEqual(filter_empty((c for c in 'abc')), ['a', 'b', 'c'])
 
         # Test when there's nothing to filter, but with unused default
         self.assertEqual(filter_empty(0, '0'), 0)
         self.assertEqual(filter_empty(1, '1'), 1)
         self.assertEqual(filter_empty('a', 'None'), 'a')
         self.assertEqual(filter_empty('abc', 'None'), 'abc')
+        self.assertEqual(filter_empty((c for c in 'abc'), 'None'), ['a', 'b', 'c'])
 
         # Test with filterable values
         self.assertEqual(filter_empty([None]), None)
@@ -226,6 +231,8 @@ class ListTupleSetTestCase(unittest.TestCase):
         self.assertEqual(filter_empty([EMPTY_STR]), None)
         self.assertEqual(filter_empty({EMPTY_STR}), None)
         self.assertEqual(filter_empty((EMPTY_STR,)), None)
+        self.assertEqual(filter_empty(x for x in (None, EMPTY_BIN, EMPTY_STR)), None)
+        self.assertEqual(filter_empty((x for x in (None, EMPTY_BIN, EMPTY_STR))), None)
 
         # Test with filterable values and defaults
         self.assertEqual(filter_empty([None, EMPTY_BIN, EMPTY_STR], {}), {})
@@ -233,7 +240,8 @@ class ListTupleSetTestCase(unittest.TestCase):
         self.assertEqual(filter_empty((EMPTY_BIN, EMPTY_STR, None), []), [])
         self.assertEqual(filter_empty([list(), set(), tuple(), dict()], {}), {})
         self.assertEqual(filter_empty((tuple(), dict(), list(), set()), []), [])
-        self.assertEqual(filter_empty({tuple(), filter_empty(tuple(), tuple())}, []), [])
+        self.assertEqual(filter_empty(x for x in (None, EMPTY_BIN, EMPTY_STR)), None)
+        self.assertEqual(filter_empty((x for x in (tuple(), dict(), list(), set())), {}), {})
 
         # Test with values that should not be filtered
         self.assertEqual(filter_empty([0]), [0])
@@ -241,16 +249,21 @@ class ListTupleSetTestCase(unittest.TestCase):
         self.assertEqual(filter_empty(['x']), ['x'])
         self.assertEqual(filter_empty({'y'}), {'y'})
         self.assertEqual(filter_empty(('z',)), ('z',))
+        self.assertEqual(filter_empty(c for c in '0'), ['0'])
+        self.assertEqual(filter_empty((c for c in '1')), ['1'])
 
         # Test with combinations of values
         self.assertEqual(filter_empty([None, 0, EMPTY_STR, 1]), [0, 1])
         self.assertEqual(filter_empty(['a', None, 'b', EMPTY_BIN, 'c']), ['a', 'b', 'c'])
         self.assertEqual(filter_empty({None, EMPTY_STR, 'a', 'b', 'c'}), {'a', 'b', 'c'})
         self.assertEqual(filter_empty(('a', 'b', None, 'c', EMPTY_BIN)), ('a', 'b', 'c'))
+        self.assertEqual(filter_empty(t for t in ('a', 'b', tuple(), 'c', set())), ['a', 'b', 'c'])
+        self.assertEqual(filter_empty((t for t in ('a', 'b', 'c', set(), list()))), ['a', 'b', 'c'])
 
         # Test with non-filterable collections
         self.assertEqual(filter_empty({'a': 'aaa'}), {'a': 'aaa'})
-        self.assertEqual([x for x in filter_empty(c for c in 'abc')], [c for c in 'abc'])
+        self.assertEqual([x for x in filter_empty(c for c in 'abc')], ['a', 'b', 'c'])
+        self.assertEqual([x for x in filter_empty((c for c in 'xyz'))], ['x', 'y', 'z'])
 
     def test_flatten_items(self):
         """ Tests flatten_items with general inputs """

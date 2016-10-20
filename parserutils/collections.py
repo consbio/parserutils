@@ -94,16 +94,17 @@ def filter_empty(values, default=None):
         return default
     elif hasattr(values, '__len__') and len(values) == 0:
         return default
-    elif isinstance(values, _filter_types):
-        values = type(values)(
-            v for v in values
-            if not (v is None or (hasattr(v, '__len__') and len(v) == 0))
+    elif hasattr(values, '__iter__') and not isinstance(values, _filtered_types):
+        filtered = type(values) if isinstance(values, _filter_types) else list
+        values = filtered(
+            v for v in values if not (v is None or (hasattr(v, '__len__') and len(v) == 0))
         )
-        return default if hasattr(values, '__len__') and len(values) == 0 else values
+        return default if len(values) == 0 else values
 
     return values
 
 _filter_types = (list, tuple, set)
+_filtered_types = (dict,) + _STRING_TYPES
 
 
 def flatten_items(items, recurse=False):
