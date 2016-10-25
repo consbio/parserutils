@@ -6,7 +6,7 @@ Contains an API defining all operations executable against an XML tree
 import re
 import six
 
-from six import binary_type, iteritems, string_types, text_type
+from six import binary_type, iteritems, string_types
 
 from defusedxml.cElementTree import fromstring, tostring
 from defusedxml.cElementTree import iterparse
@@ -798,7 +798,7 @@ def element_to_object(elem_to_parse, element_path=None):
 
 def _element_to_object(element):
 
-    def accumulate(obj, items, tag=None):
+    def accumulate_items(obj, items, tag=None):
         """ Add or append non-None key/val pairs in items under each key in obj """
 
         for key, val in items:
@@ -821,12 +821,12 @@ def _element_to_object(element):
     # Populate leaf elements first to reduce cost of recursion stack
 
     children = ((e.tag, _element_to_object(e)) for e in element)
-    accumulate(obj, children)
+    accumulate_items(obj, children)
 
     # Now that all children have been populated, fill out the parent object
 
     attributes = ((k, v) for k, v in iteritems(element.attrib) if v and v.strip())
-    accumulate(obj, attributes, element.tag)
+    accumulate_items(obj, attributes, element.tag)
 
     # Add as value a list containing text and tail if both are present, or just the text for one
     text_values = ((text or u'').strip() for text in (element.text, element.tail))

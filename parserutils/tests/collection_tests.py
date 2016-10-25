@@ -1,61 +1,61 @@
 import unittest
 
-from parserutils.collections import accumulate, setdefaults
+from parserutils.collections import accumulate_items, setdefaults
 from parserutils.collections import filter_empty, flatten_items, reduce_value, wrap_value
 from parserutils.strings import EMPTY_BIN, EMPTY_STR
 
 
 class DictsTestCase(unittest.TestCase):
 
-    def test_accumulate(self):
-        """ Tests accumulate with general inputs """
+    def test_accumulate_items(self):
+        """ Tests accumulate_items with general inputs """
 
         # Test with empty items
-        self.assertEqual(accumulate(None), {})
-        self.assertEqual(accumulate(EMPTY_BIN), {})
-        self.assertEqual(accumulate(EMPTY_STR), {})
-        self.assertEqual(accumulate(dict()), {})
-        self.assertEqual(accumulate(list()), {})
-        self.assertEqual(accumulate(set()), {})
-        self.assertEqual(accumulate(tuple()), {})
-        self.assertEqual(accumulate(x for x in EMPTY_BIN), {})
-        self.assertEqual(accumulate((x for x in EMPTY_STR)), {})
+        self.assertEqual(accumulate_items(None), {})
+        self.assertEqual(accumulate_items(EMPTY_BIN), {})
+        self.assertEqual(accumulate_items(EMPTY_STR), {})
+        self.assertEqual(accumulate_items(dict()), {})
+        self.assertEqual(accumulate_items(list()), {})
+        self.assertEqual(accumulate_items(set()), {})
+        self.assertEqual(accumulate_items(tuple()), {})
+        self.assertEqual(accumulate_items(x for x in EMPTY_BIN), {})
+        self.assertEqual(accumulate_items((x for x in EMPTY_STR)), {})
 
         # Test with items containing single key/val
-        self.assertEqual(accumulate({(None, None)}), {None: [None]})
-        self.assertEqual(accumulate([(EMPTY_BIN, EMPTY_STR)]), {EMPTY_BIN: [EMPTY_STR]})
-        self.assertEqual(accumulate(([EMPTY_STR, EMPTY_BIN],)), {EMPTY_STR: [EMPTY_BIN]})
-        self.assertEqual(accumulate((k, v) for k, v in [['key', 'val']]), {'key': ['val']})
-        self.assertEqual(accumulate(((k, v) for k, v in [(0, 1)])), {0: [1]})
+        self.assertEqual(accumulate_items({(None, None)}), {None: [None]})
+        self.assertEqual(accumulate_items([(EMPTY_BIN, EMPTY_STR)]), {EMPTY_BIN: [EMPTY_STR]})
+        self.assertEqual(accumulate_items(([EMPTY_STR, EMPTY_BIN],)), {EMPTY_STR: [EMPTY_BIN]})
+        self.assertEqual(accumulate_items((k, v) for k, v in [['key', 'val']]), {'key': ['val']})
+        self.assertEqual(accumulate_items(((k, v) for k, v in [(0, 1)])), {0: [1]})
 
         # Test with items containing single key/val, reducing each
-        self.assertEqual(accumulate({(None, None)}, reduce_each=True), {None: None})
-        self.assertEqual(accumulate([(EMPTY_BIN, EMPTY_STR)], reduce_each=True), {EMPTY_BIN: EMPTY_STR})
-        self.assertEqual(accumulate(([EMPTY_STR, EMPTY_BIN],), reduce_each=True), {EMPTY_STR: EMPTY_BIN})
-        self.assertEqual(accumulate(((k, v) for k, v in [['key', 'val']]), reduce_each=True), {'key': 'val'})
-        self.assertEqual(accumulate(((k, v) for k, v in [(0, 1)]), reduce_each=True), {0: 1})
+        self.assertEqual(accumulate_items({(None, None)}, reduce_each=True), {None: None})
+        self.assertEqual(accumulate_items([(EMPTY_BIN, EMPTY_STR)], reduce_each=True), {EMPTY_BIN: EMPTY_STR})
+        self.assertEqual(accumulate_items(([EMPTY_STR, EMPTY_BIN],), reduce_each=True), {EMPTY_STR: EMPTY_BIN})
+        self.assertEqual(accumulate_items(((k, v) for k, v in [['key', 'val']]), reduce_each=True), {'key': 'val'})
+        self.assertEqual(accumulate_items(((k, v) for k, v in [(0, 1)]), reduce_each=True), {0: 1})
 
         # Test with items containing single vals under multiple keys, with and without reduction
         self.assertEqual(
-            accumulate([('key1', 'val'), ('key2', 'val'), ('key3', 'val')]),
+            accumulate_items([('key1', 'val'), ('key2', 'val'), ('key3', 'val')]),
             {'key1': ['val'], 'key2': ['val'], 'key3': ['val']}
         )
         self.assertEqual(
-            accumulate([('key1', 'val'), ('key2', 'val'), ('key3', 'val')], reduce_each=True),
+            accumulate_items([('key1', 'val'), ('key2', 'val'), ('key3', 'val')], reduce_each=True),
             {'key1': 'val', 'key2': 'val', 'key3': 'val'}
         )
 
         # Test with items containing multiple vals under a single key, with and without reduction
         self.assertEqual(
-            accumulate([('key', 'val1'), ('key', 'val2'), ('key', 'val3')]),
+            accumulate_items([('key', 'val1'), ('key', 'val2'), ('key', 'val3')]),
             {'key': ['val1', 'val2', 'val3']}
         )
         self.assertEqual(
-            accumulate([('key', 'val1'), ('key', 'val2'), ('key', 'val3')], reduce_each=True),
+            accumulate_items([('key', 'val1'), ('key', 'val2'), ('key', 'val3')], reduce_each=True),
             {'key': ['val1', 'val2', 'val3']}
         )
         self.assertEqual(
-            accumulate(
+            accumulate_items(
                 [('key', 'val1'), ('key', 'val2'), ('key2', ['val1', 'val2']), ('key3', 'val3')], reduce_each=True
             ),
             {'key': ['val1', 'val2'], 'key2': ['val1', 'val2'], 'key3': 'val3'}
@@ -63,11 +63,11 @@ class DictsTestCase(unittest.TestCase):
 
         # Test with items containing multiple vals under multiple keys, with and without reduction
         self.assertEqual(
-            accumulate([('key3', 'val1'), ('key2', 'val2'), ('key1', 'val3')]),
+            accumulate_items([('key3', 'val1'), ('key2', 'val2'), ('key1', 'val3')]),
             {'key1': ['val3'], 'key2': ['val2'], 'key3': ['val1']}
         )
         self.assertEqual(
-            accumulate([('key3', 'val1'), ('key2', 'val2'), ('key1', 'val3')], reduce_each=True),
+            accumulate_items([('key3', 'val1'), ('key2', 'val2'), ('key1', 'val3')], reduce_each=True),
             {'key1': 'val3', 'key2': 'val2', 'key3': 'val1'}
         )
 

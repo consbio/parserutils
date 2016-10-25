@@ -8,7 +8,7 @@ from parserutils.strings import EMPTY_STR, _STRING_TYPES
 # DICT FUNCTIONS #
 
 
-def accumulate(items, reduce_each=False):
+def accumulate_items(items, reduce_each=False):
     """ :return: item pairs as key: val, with vals under duplicate keys accumulated under each """
 
     if not items:

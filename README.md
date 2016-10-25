@@ -22,8 +22,8 @@ Here's what you can do with `dict` objects and other collections.
 ```python
 from parserutils import collections
 
-collections.accumulate([('key', 'val1'), ('key', 'val2'), ('key', 'val3')])   # {'key': ['val1', 'val2', 'val3']}
-collections.accumulate(
+collections.accumulate_items([('key', 'val1'), ('key', 'val2'), ('key', 'val3')])   # {'key': ['val1', 'val2', 'val3']}
+collections.accumulate_items(
     [('key1', 'val1'), ('key2', 'val2'), ('key3', 'val3')], reduce_each=True  # {'key1': 'val1', 'key2': 'val2', 'key3': 'val3'}
 )
 
