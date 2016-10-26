@@ -27,6 +27,7 @@ _FILE_LOCATION_REGEX = re.compile(r'^({win})|({lin})'.format(**_ABS_FILE_REGEX))
 _NAMESPACES_FROM_DEC_REGEX = re.compile(r"""(<[^>]*)\sxmlns[^"'>]+["'][^"'>]+["']""")
 _NAMESPACES_FROM_TAG_REGEX = re.compile(r'(</?)[\w\-.]+:')
 _NAMESPACES_FROM_ATTR_REGEX = re.compile(r'(\s+)([\w\-.]+:)([\w\-.]+\s*=)')
+_XML_DECLARATION_REGEX = re.compile(r'^\s*<\?xml(.|\n)*\?>\s*')
 
 _ELEM_NAME = 'name'
 _ELEM_TEXT = 'text'
@@ -165,18 +166,15 @@ def get_element(parent_to_parse, element_path=None):
         parent_to_parse = parent_to_parse.getroot()
 
     elif hasattr(parent_to_parse, 'read'):
-        parent_to_parse = fromstring(parent_to_parse.read().strip())
+        parent_to_parse = string_to_element(parent_to_parse.read())
 
-    elif isinstance(parent_to_parse, string_types):
-        parent_to_parse = fromstring(parent_to_parse.strip())
-
-    elif isinstance(parent_to_parse, binary_type):
-        parent_to_parse = fromstring(parent_to_parse.decode(encoding=DEFAULT_ENCODING).strip())
+    elif isinstance(parent_to_parse, _STRING_TYPES):
+        parent_to_parse = string_to_element(parent_to_parse)
 
     elif isinstance(parent_to_parse, dict):
         parent_to_parse = dict_to_element(parent_to_parse)
 
-    elif not isinstance(parent_to_parse, ElementType):
+    if not isinstance(parent_to_parse, ElementType):
         return None
 
     return parent_to_parse.find(element_path) if element_path else parent_to_parse
@@ -848,7 +846,7 @@ def element_to_string(element, encoding=DEFAULT_ENCODING, method='xml'):
     # No Parsing of Element here, since String is the destination
     if isinstance(element, ElementTree):
         element = element.getroot()
-    if not isinstance(element, ElementType):
+    elif not isinstance(element, ElementType):
         element = get_element(element)
 
     # Elements have 'iter' as opposed to '__iter__'
@@ -856,6 +854,36 @@ def element_to_string(element, encoding=DEFAULT_ENCODING, method='xml'):
         return tostring(element, encoding, method).decode(encoding=DEFAULT_ENCODING)
 
     return u''
+
+
+def string_to_element(element_as_string, include_namespaces=False):
+    """ :return: an element parsed from a string value, or the element as is if already parsed """
+
+    if element_as_string is None:
+        return None
+    elif isinstance(element_as_string, ElementTree):
+        return element_as_string.getroot()
+    elif isinstance(element_as_string, ElementType):
+        return element_as_string
+
+    if isinstance(element_as_string, binary_type):
+        element_as_string = element_as_string.decode(encoding=DEFAULT_ENCODING)
+    elif hasattr(element_as_string, 'read'):
+        # Handles files, but more importantly StringIO
+        element_as_string = element_as_string.read()
+
+    if not isinstance(element_as_string, string_types):
+        # Let cElementTree handle the error
+        return fromstring(element_as_string)
+
+    element_as_string = _XML_DECLARATION_REGEX.sub(u'', element_as_string.strip())
+
+    if not element_as_string:
+        return None  # Same as ElementTree().getroot()
+    elif include_namespaces:
+        return fromstring(element_as_string)
+    else:
+        return fromstring(strip_namespaces(element_as_string))
 
 
 def iter_elements(element_function, parent_to_parse, **kwargs):
@@ -889,17 +917,13 @@ def iterparse_elements(element_function, file_or_path, **kwargs):
     """
 
     if not hasattr(element_function, '__call__'):
-        return None
+        return
 
-    if isinstance(file_or_path, string_types):
-        file_path = file_or_path
-    else:
-        file_path = file_or_path.name
-
-    # Start event loads child; by the End event it's ready for processing
-
+    file_path = getattr(file_or_path, 'name', file_or_path)
     context = iter(iterparse(file_path, events=('start', 'end')))
     root = None  # Capture root for Memory management
+
+    # Start event loads child; by the End event it's ready for processing
 
     for event, child in context:
         if root is None:

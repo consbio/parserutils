@@ -14,8 +14,11 @@ from parserutils.elements import get_element_name, get_element_attribute, get_el
 from parserutils.elements import set_element_attributes, remove_element_attributes
 from parserutils.elements import get_element_tail, get_elements_tail, get_element_text, get_elements_text
 from parserutils.elements import set_element_tail, set_elements_tail, set_element_text, set_elements_text
-from parserutils.elements import dict_to_element, element_to_dict, element_to_object, element_to_string
-from parserutils.elements import iter_elements, iterparse_elements, strip_namespaces, write_element
+from parserutils.elements import dict_to_element, element_to_dict, element_to_object
+from parserutils.elements import element_to_string, string_to_element, strip_namespaces
+from parserutils.elements import iter_elements, iterparse_elements, write_element
+
+from parserutils.strings import EMPTY_BIN, EMPTY_STR
 
 
 ELEM_NAME = 'tag'
@@ -24,6 +27,14 @@ ELEM_TAIL = 'tail'
 ELEM_ATTRIBS = 'attrib'
 
 ELEM_PROPERTIES = (ELEM_NAME, ELEM_TEXT, ELEM_TAIL, ELEM_ATTRIBS)
+
+_EMPTY_XML_1 = '<?xml version="1.0" encoding="UTF-8"?>'
+_EMPTY_XML_2 = """
+    <?xml
+     version="version_number"
+     encoding="encoding_declaration"
+     standalone="standalone_status" ?>
+"""
 
 
 class XMLTestCase(unittest.TestCase):
@@ -51,6 +62,7 @@ class XMLTestCase(unittest.TestCase):
             fromstring(self.elem_data_str), ElementTree(fromstring(self.elem_data_str)),
             self.elem_data_file, self.elem_data_bin, self.elem_data_str, self.elem_data_dict, self.elem_data_reader
         )
+        self.elem_empty_inputs = (None, _EMPTY_XML_1, _EMPTY_XML_2, EMPTY_BIN, EMPTY_STR, ElementTree())
 
         self.elem_xpath = 'c'
 
@@ -79,7 +91,14 @@ class XMLTestCase(unittest.TestCase):
         """
         Ensures elem_func returns None for None, and that the element returned by elem_func is equal to base_elem.
         """
-        self.assertIsNone(elem_func(None, **elem_kwargs), 'None check failed for {0}'.format(elem_func.__name__))
+
+        elem_func_name = elem_func.__name__
+
+        for empty in self.elem_empty_inputs:
+            self.assertIsNone(
+                elem_func(empty, **elem_kwargs),
+                'Empty check failed for {0} with "{1}"'.format(elem_func_name, empty)
+            )
 
         base_elem = fromstring(self.elem_data_str)
         elem_name = base_elem.tag
@@ -286,16 +305,16 @@ class XMLTests(XMLTestCase):
         """ Tests get_elements for single and multiple XPATHs parsed from different data sources """
 
         self.assertEqual(get_elements(None, None), [], 'None check failed for get_elements')
-        self.assertEqual(get_elements('<a />', ''), [], 'Empty check failed for get_elements')
+        self.assertEqual(get_elements(u'<a />', u''), [], 'Empty check failed for get_elements')
 
         xml_content = (
-            '<b/>', '<b></b>', '<b b="bbb">btext<c />ctail</b>',
-            '<b/><b></b>', '<b/><b></b><b b="bbb">btext<c />ctail</b>'
+            u'<b/>', u'<b></b>', u'<b b="bbb">btext<c />ctail</b>',
+            u'<b/><b></b>', u'<b/><b></b><b b="bbb">btext<c />ctail</b>'
         )
 
         for xml in xml_content:
-            elements = get_elements('<a>{0}</a>'.format(xml), 'b')
-            targeted = fromstring('<x>{0}</x>'.format(xml)).findall('b')
+            elements = get_elements(u'<a>{0}</a>'.format(xml), 'b')
+            targeted = fromstring(u'<x>{0}</x>'.format(xml)).findall('b')
 
             for idx, elem in enumerate(elements):
                 self.assert_elements_are_equal(elem, targeted[idx], 'a/b')
@@ -382,8 +401,10 @@ class XMLTests(XMLTestCase):
     def test_element_to_string(self):
         """ Tests element conversion from different data sources to XML, with and without a declaration line """
 
-        self.assertEqual('', element_to_string(None), 'None check failed for element_to_string')
-        self.assertEqual('', element_to_string([]), 'Empty check failed for element_to_string')
+        self.assertEqual(EMPTY_STR, element_to_string(None), 'None check failed for element_to_string')
+        self.assertEqual(EMPTY_STR, element_to_string(EMPTY_BIN), 'Binary check failed for element_to_string')
+        self.assertEqual(EMPTY_STR, element_to_string(EMPTY_STR), 'Unicode check failed for element_to_string')
+        self.assertEqual(EMPTY_STR, element_to_string([]), 'Empty list check failed for element_to_string')
 
         self.assertEqual(
             self.elem_data_str, element_to_string(fromstring(self.elem_data_str), None, None),
@@ -403,7 +424,7 @@ class XMLTests(XMLTestCase):
             )
 
     def test_element_to_string_wout_dec(self):
-        """ Tests element conversion from different data sources to XML, with and without a declaration line """
+        """ Tests conversion from different data sources to XML, with and without a declaration line """
 
         as_string = element_to_string(fromstring(self.elem_data_str), None, None)
 
@@ -413,6 +434,54 @@ class XMLTests(XMLTestCase):
                 element_to_string(data, None, None), as_string,
                 'Without declaration check failed for element_to_string for {0}'.format(data_type)
             )
+
+    def test_string_to_element(self):
+        """ Tests element conversion from different data sources to XML, with and without a declaration line """
+
+        for empty in self.elem_empty_inputs:
+            self.assertIsNone(string_to_element(empty), 'Empty check failed for string_to_element')
+
+        parsed = fromstring(self.elem_data_str)
+
+        # Ensure elements and element trees are passed back unchanged
+
+        self.assertIs(string_to_element(parsed), parsed, 'Hard equality test failed for string_to_element')
+        self.assertIs(
+            string_to_element(ElementTree(parsed)), parsed, 'Tree equality test failed for string_to_element'
+        )
+
+        # Ensure binary and string reader objects are processed
+
+        self.assert_elements_are_equal(
+            string_to_element(self.elem_data_str.encode()), parsed,
+            'Binary equality test failed for string_to_element'
+        )
+        self.assert_elements_are_equal(
+            string_to_element(StringIO(self.elem_data_str)), parsed,
+            'StringIO equality test failed for string_to_element'
+        )
+
+        # Test that invalid string values are handled the cElementTree way
+        with self.assertRaises(SyntaxError):
+            string_to_element('THIS IS NOT XML')
+
+        # Test that invalid objects are handled the cElementTree way
+        with self.assertRaises(TypeError):
+            string_to_element(self)
+
+        # Test include_namespaces: parsing of name-spaced and stripped string data
+
+        with open(self.namespace_file_path) as data:
+            namespaced = data.read()
+
+            unstripped = string_to_element(namespaced, include_namespaces=True)
+            self.assert_elements_are_equal(unstripped, fromstring(namespaced))
+
+            stripped = string_to_element(namespaced, include_namespaces=False)
+            self.assert_elements_are_equal(stripped, fromstring(strip_namespaces(namespaced)))
+
+            with self.assertRaises(AssertionError):
+                self.assert_elements_are_equal(unstripped, stripped)
 
     def test_iter_elements(self):
         """ Tests iter_elements with a custom function on elements from different data sourcs """
@@ -433,13 +502,12 @@ class XMLTests(XMLTestCase):
 
     def test_iterparse_elements(self):
 
+        # Test with some basic invalid inputs
         self.assertIsNone(iterparse_elements(None, None), 'None check failed for iter_elements')
-        self.assertIsNone(iterparse_elements('', ''), 'Empty check failed for iter_elements')
+        self.assertIsNone(iterparse_elements(EMPTY_STR, None), 'Empty check failed for iter_elements')
 
-    def test_iterparse_elements_with_file(self):
+        # Test with file path and file object
         self._test_iterparse_elements_op(self.elem_data_file)
-
-    def test_iterparse_elements_with_path(self):
         self._test_iterparse_elements_op(self.elem_data_file_path)
 
     def _test_iterparse_elements_op(self, elem_to_parse):
@@ -1176,7 +1244,7 @@ class XMLInsertRemoveTests(XMLTestCase):
         # Ensure both (first) empty children are removed
         nested_child = remove_empty_element(parent_to_parse='<a><b><c/><c/><d/></b></a>', element_path='b/c')
         self.assertEqual(len(nested_child), 2)
-        self.assertEqual(''.join(c.tag for c in nested_child), 'c' * 2)
+        self.assertEqual(u''.join(c.tag for c in nested_child), 'c' * 2)
 
         # Ensure only the (second) empty child is removed when it precedes another
         nested_child = remove_empty_element(parent_to_parse='<a><b><c/><d/><d>ddd</d></b></a>', element_path='b/d')
@@ -1191,4 +1259,4 @@ class XMLInsertRemoveTests(XMLTestCase):
         # Ensure all three (second) empty children are removed
         nested_child = remove_empty_element(parent_to_parse='<a><b><c/><d/><d/><d/></b></a>', element_path='b/d')
         self.assertEqual(len(nested_child), 3)
-        self.assertEqual(''.join(d.tag for d in nested_child), 'd' * 3)
+        self.assertEqual(u''.join(d.tag for d in nested_child), 'd' * 3)
