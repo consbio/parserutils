@@ -866,17 +866,21 @@ def string_to_element(element_as_string, include_namespaces=False):
     elif isinstance(element_as_string, ElementType):
         return element_as_string
 
-    if isinstance(element_as_string, binary_type):
-        element_as_string = element_as_string.decode(encoding=DEFAULT_ENCODING)
+    if isinstance(element_as_string, string_types):
+        # For Python 2 compliance: FIRST check basestring before str
+        element_as_string = element_as_string.strip()
+    elif isinstance(element_as_string, binary_type):
+        # For Python 3 compliance: NOW decode binary arrays (not Python 2 str)
+        element_as_string = element_as_string.decode(encoding=DEFAULT_ENCODING).strip()
     elif hasattr(element_as_string, 'read'):
         # Handles files, but more importantly StringIO
-        element_as_string = element_as_string.read()
+        element_as_string = element_as_string.read().strip()
 
     if not isinstance(element_as_string, string_types):
         # Let cElementTree handle the error
         return fromstring(element_as_string)
 
-    element_as_string = _XML_DECLARATION_REGEX.sub(u'', element_as_string.strip())
+    element_as_string = _XML_DECLARATION_REGEX.sub(u'', element_as_string)
 
     if not element_as_string:
         return None  # Same as ElementTree().getroot()
