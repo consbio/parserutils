@@ -22,7 +22,7 @@ setup(
     name='parserutils',
     description='A collection of performant parsing utilities',
     keywords='parser,parsing,utils,utilities,collections,dates,elements,numbers,strings,url,xml',
-    version='0.7.1',
+    version='0.8.0',
     packages=[
         'parserutils', 'parserutils.tests'
     ],
