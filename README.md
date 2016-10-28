@@ -8,7 +8,7 @@ The functions in this library are written to be both performant and Pythonic, as
 They are both documented and covered thoroughly by unit tests that fully describe and prove their behavior.
 
 In general, my philosophy is that utility functions should be fast and handle edge cases so the caller doesn't have to take all kinds of precautions or do type checking on results.
-Thus, in this library, if None will break a function it is simply returned as is; if there's nothing to do for a value, the result is returned without processing; Etc.
+Thus, in this library, if None will break a function it is simply returned as is; if there's nothing to do for a value, the result is returned without processing; otherwise, values are either processed successfully or a standard exception is returned.
 
 But this is just a starting point. I welcome feedback and requests for additional functionality.
 
@@ -31,7 +31,22 @@ collections.setdefaults({}, 'a.b')                         # {'a': {'b': None}}
 collections.setdefaults({}, ['a.b', 'a.c'])                # {'a': {'b': None, 'c': None}}
 collections.setdefaults({}, {'a.b': 'bbb', 'a.c': 'ccc'})  # {'a': {'b': 'bbb', 'c': 'ccc'}}
 
-# Also see: collections.filter_empty, flatten_items, reduce_value, wrap_value
+collections.filter_empty(x for x in (None, [], ['a'], '', {'b'}, 'c'))      # [['a'], {'b'}, 'c']
+collections.flatten_items(x for x in ('abc', ['a', 'b', 'c'], ('d', 'e')))  # ['abc', 'a', 'b', 'c', 'd', 'e']
+
+collections.reduce_value(['abc'])          # 'abc'
+collections.reduce_value(('abc',))         # 'abc'
+collections.reduce_value({'abc'})          # 'abc'
+collections.reduce_value('abc')            # 'abc'
+collections.reduce_value({'a': 'aaa'})     # {'a': 'aaa'}
+collections.reduce_value(['a', 'b', 'c'])  # ['a', 'b', 'c']
+
+collections.wrap_value(['abc'])           # ['abc']
+collections.wrap_value(('abc',))          # ('abc',)
+collections.wrap_value('abc')             # ['abc']
+collections.wrap_value(x for x in 'abc')  # ['a', 'b', 'c']
+collections.wrap_value({'a': 'aaa'})      # [{'a': 'aaa'}]
+collections.wrap_value(['a', 'b', 'c'])   # ['a', 'b', 'c']
 ```
 
 Here's a little bit about dates and numbers.
