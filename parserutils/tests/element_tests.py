@@ -62,7 +62,7 @@ class XMLTestCase(unittest.TestCase):
             fromstring(self.elem_data_str), ElementTree(fromstring(self.elem_data_str)),
             self.elem_data_file, self.elem_data_bin, self.elem_data_str, self.elem_data_dict, self.elem_data_reader
         )
-        self.elem_empty_inputs = (None, _EMPTY_XML_1, _EMPTY_XML_2, EMPTY_BIN, EMPTY_STR, ElementTree())
+        self.elem_empty_inputs = (None, _EMPTY_XML_1, _EMPTY_XML_2, EMPTY_BIN, EMPTY_STR, StringIO(u''), ElementTree())
 
         self.elem_xpath = 'c'
 
@@ -266,7 +266,18 @@ class XMLTests(XMLTestCase):
 
     def test_get_element(self):
         """ Tests get_element with None, and for equality with different params """
+
         self.assert_element_function(get_element)
+
+        for bad_xml in ({'a': 'aaa'}, 'NOT XML', StringIO('NOT XML')):
+            # Assert that invalid XML values result in SyntaxError
+            with self.assertRaises(SyntaxError):
+                get_element(bad_xml)
+
+        for bad_xml in (self, list(), set(), tuple(), ['a'], {'b'}, ('c',)):
+            # Assert that non-XML values result in TypeError
+            with self.assertRaises(TypeError):
+                get_element(bad_xml)
 
     def test_get_element_xpath(self):
         """ Tests get_element at an XPATH location with different element data """
@@ -329,22 +340,32 @@ class XMLTests(XMLTestCase):
     def test_dict_to_element(self):
         """ Tests dictionary to element conversion on elements converted from different data sources """
 
-        self.assertIsNone(dict_to_element(None), 'None check failed for test_dict_to_element')
-        self.assertIsNone(dict_to_element(ElementTree()), 'ElementTree check failed for test_dict_to_element')
-        self.assertIsNone(dict_to_element(Element), 'Element check failed for test_dict_to_element')
+        self.assertIsNone(dict_to_element(None), 'None check failed for dict_to_element')
+        self.assertIsNone(dict_to_element({}), 'Empty dict check failed for dict_to_element')
+        self.assertIsNone(dict_to_element(ElementTree()), 'ElementTree check failed for dict_to_element')
 
         base_elem = fromstring(self.elem_data_str)
         dict_elem = dict_to_element(self.elem_data_dict)
+        empty_elem = Element(u'')
 
         self.assert_elements_are_equal(base_elem, dict_elem)
 
-        for data in self.elem_data_inputs:
-            if isinstance(data, dict):
-                self.assert_elements_are_equal(base_elem, dict_to_element(self.elem_data_dict))
-            else:
-                self.assertIsNone(
-                    dict_to_element(data), 'Invalid dictionary check failed for {0}'.format(type(data).__name__)
-                )
+        self.assertIsInstance(dict_to_element(base_elem), ElementType)
+        self.assertIsInstance(dict_to_element(dict_elem), ElementType)
+        self.assertIsInstance(dict_to_element(empty_elem), ElementType)
+
+        # Test that invalid dict values result in syntax error
+        with self.assertRaises(SyntaxError):
+            dict_to_element({'a': 'aaa'})
+
+        for bad_xml in (self, list(), set(), tuple(), ['a'], {'b'}, ('c',)):
+            # Assert that non-XML values result in TypeError
+            with self.assertRaises(TypeError):
+                dict_to_element(bad_xml)
+
+        # Test that invalid file or string IO objects are handled the cElementTree way
+        with self.assertRaises(TypeError):
+            dict_to_element(StringIO('NOT XML'))
 
     def test_element_to_dict(self):
         """ Tests element to dictionary conversion on elements converted from different data sources """
@@ -404,7 +425,7 @@ class XMLTests(XMLTestCase):
         self.assertEqual(EMPTY_STR, element_to_string(None), 'None check failed for element_to_string')
         self.assertEqual(EMPTY_STR, element_to_string(EMPTY_BIN), 'Binary check failed for element_to_string')
         self.assertEqual(EMPTY_STR, element_to_string(EMPTY_STR), 'Unicode check failed for element_to_string')
-        self.assertEqual(EMPTY_STR, element_to_string([]), 'Empty list check failed for element_to_string')
+        self.assertEqual(EMPTY_STR, element_to_string(StringIO('')), 'StringIO check failed for element_to_string')
 
         self.assertEqual(
             self.elem_data_str, element_to_string(fromstring(self.elem_data_str), None, None),
@@ -463,11 +484,16 @@ class XMLTests(XMLTestCase):
 
         # Test that invalid string values are handled the cElementTree way
         with self.assertRaises(SyntaxError):
-            string_to_element('THIS IS NOT XML')
+            string_to_element('NOT XML')
 
-        # Test that invalid objects are handled the cElementTree way
-        with self.assertRaises(TypeError):
-            string_to_element(self)
+        # Test that invalid file or string IO objects are handled the cElementTree way
+        with self.assertRaises(SyntaxError):
+            string_to_element(StringIO('NOT XML'))
+
+        for bad_xml in (self, list(), set(), tuple(), ['a'], {'b'}, ('c',)):
+            # Assert that non-XML values result in TypeError
+            with self.assertRaises(TypeError):
+                get_element(bad_xml)
 
         # Test include_namespaces: parsing of name-spaced and stripped string data
 

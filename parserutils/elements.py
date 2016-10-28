@@ -174,8 +174,11 @@ def get_element(parent_to_parse, element_path=None):
     elif isinstance(parent_to_parse, dict):
         parent_to_parse = dict_to_element(parent_to_parse)
 
-    if not isinstance(parent_to_parse, ElementType):
+    if parent_to_parse is None:
         return None
+    elif not isinstance(parent_to_parse, ElementType):
+        element_type = type(parent_to_parse).__name__
+        raise TypeError('Invalid element type: {0}'.format(element_type))
 
     return parent_to_parse.find(element_path) if element_path else parent_to_parse
 
@@ -716,19 +719,32 @@ def dict_to_element(element_as_dict):
         - children: a List of converted child elements
     """
 
-    if not isinstance(element_as_dict, dict):
+    if element_as_dict is None:
+        return None
+    elif isinstance(element_as_dict, ElementTree):
+        return element_as_dict.getroot()
+    elif isinstance(element_as_dict, ElementType):
+        return element_as_dict
+    elif not isinstance(element_as_dict, dict):
+        raise TypeError('Invalid element dict: {0}'.format(element_as_dict))
+
+    if len(element_as_dict) == 0:
         return None
 
-    converted = Element(
-        element_as_dict[_ELEM_NAME],
-        element_as_dict.get(_ELEM_ATTRIBS, {})
-    )
+    try:
+        converted = Element(
+            element_as_dict[_ELEM_NAME],
+            element_as_dict.get(_ELEM_ATTRIBS, {})
+        )
 
-    converted.tail = element_as_dict.get(_ELEM_TAIL, u'')
-    converted.text = element_as_dict.get(_ELEM_TEXT, u'')
+        converted.tail = element_as_dict.get(_ELEM_TAIL, u'')
+        converted.text = element_as_dict.get(_ELEM_TEXT, u'')
 
-    for child in element_as_dict.get(_ELEM_CHILDREN, []):
-        converted.append(dict_to_element(child))
+        for child in element_as_dict.get(_ELEM_CHILDREN, []):
+            converted.append(dict_to_element(child))
+
+    except KeyError:
+        raise SyntaxError('Invalid element dict: {0}'.format(element_as_dict))
 
     return converted
 
