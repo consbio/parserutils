@@ -493,7 +493,7 @@ class XMLTests(XMLTestCase):
         for bad_xml in (self, list(), set(), tuple(), ['a'], {'b'}, ('c',)):
             # Assert that non-XML values result in TypeError
             with self.assertRaises(TypeError):
-                get_element(bad_xml)
+                string_to_element(bad_xml)
 
         # Test include_namespaces: parsing of name-spaced and stripped string data
 
