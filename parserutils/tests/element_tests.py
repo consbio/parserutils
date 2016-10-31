@@ -31,9 +31,9 @@ ELEM_PROPERTIES = (ELEM_NAME, ELEM_TEXT, ELEM_TAIL, ELEM_ATTRIBS)
 _EMPTY_XML_1 = '<?xml version="1.0" encoding="UTF-8"?>'
 _EMPTY_XML_2 = """
     <?xml
-     version="version_number"
-     encoding="encoding_declaration"
-     standalone="standalone_status" ?>
+     version="1.0"
+     encoding="UTF-8"
+     standalone="yes" ?>
 """
 
 
