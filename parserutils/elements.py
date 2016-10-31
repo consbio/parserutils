@@ -5,6 +5,7 @@ Contains an API defining all operations executable against an XML tree
 
 import re
 import six
+import string
 
 from six import binary_type, iteritems, string_types
 
@@ -27,7 +28,7 @@ _FILE_LOCATION_REGEX = re.compile(r'^({win})|({lin})'.format(**_ABS_FILE_REGEX))
 _NAMESPACES_FROM_DEC_REGEX = re.compile(r"""(<[^>]*)\sxmlns[^"'>]+["'][^"'>]+["']""")
 _NAMESPACES_FROM_TAG_REGEX = re.compile(r'(</?)[\w\-.]+:')
 _NAMESPACES_FROM_ATTR_REGEX = re.compile(r'(\s+)([\w\-.]+:)([\w\-.]+\s*=)')
-_XML_DECLARATION_REGEX = re.compile(r'^\s*<\?xml(.|\n)*\?>\s*')
+_XML_DECLARATION_REGEX = re.compile(r'^\s*<\?xml[\w\s{punc}]*\?>\s*'.format(punc=string.punctuation))
 
 _ELEM_NAME = 'name'
 _ELEM_TEXT = 'text'
@@ -896,7 +897,7 @@ def string_to_element(element_as_string, include_namespaces=False):
         # Let cElementTree handle the error
         return fromstring(element_as_string)
 
-    element_as_string = _XML_DECLARATION_REGEX.sub(u'', element_as_string)
+    element_as_string = _XML_DECLARATION_REGEX.sub(u'', element_as_string, 1)
 
     if not element_as_string:
         return None  # Same as ElementTree().getroot()

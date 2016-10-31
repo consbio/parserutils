@@ -1,13 +1,14 @@
 import re
 import unicodedata
 
-from string import ascii_letters, digits
+from string import ascii_letters, digits, punctuation
 from six import binary_type, text_type, string_types
 
 
 _STRING_TYPES = (binary_type, string_types)
 
 ALPHANUMERIC = set(ascii_letters + digits)
+PUNCTUATION = set(punctuation)
 
 DEFAULT_ENCODING = 'UTF-8'
 
