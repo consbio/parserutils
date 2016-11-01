@@ -26,9 +26,9 @@ def accumulate_items(items, reduce_each=False):
 
 def setdefaults(d, defaults):
     """
-    If defaults is a str, updates a dict with None at an optionally dot-notated key:
+    If defaults is a str, updates a dict with None at an optionally dot-notated current:
         'a.b' --> {'a': {'b': None}}
-    If defaults is a list, updates a dict with None at each optionally dot-notated key:
+    If defaults is a list, updates a dict with None at each optionally dot-notated current:
         ['a.b', 'a.c'] --> {'a': {'b': None, 'c': None}}
     If defaults is a dict, applies keys as fields and values as defaults:
         {'a.b': 'bbb', 'a.c': 'ccc'} --> {'a': {'b': 'bbb', 'c': 'ccc'}}
@@ -36,49 +36,64 @@ def setdefaults(d, defaults):
     """
 
     def to_key_val_pairs(defs):
-        """ Helper to split strings, lists and dicts into (key, value) tuples for accumulation """
+        """ Helper to split strings, lists and dicts into (current, value) tuples for accumulation """
 
         if isinstance(defs, string_types):
+            # Convert 'a' to [('a', None)], or 'a.b.c' to [('a', 'b.c')]
             return [defs.split('.', 1) if '.' in defs else (defs, None)]
         else:
             pairs = []
+
+            # Convert collections of strings or lists as above; break dicts into component items
             pairs.extend(p for s in defs if isinstance(s, string_types) for p in to_key_val_pairs(s))
             pairs.extend(p for l in defs if isinstance(l, list) for p in to_key_val_pairs(l))
             pairs.extend(p for d in defs if isinstance(d, dict) for p in iteritems(d))
+
             return pairs
 
     if not isinstance(d, dict) or defaults is None:
         return d
-    elif isinstance(defaults, (string_types, dict)):
+    elif isinstance(defaults, _wrap_types):
         return setdefaults(d, [defaults])  # Wrap in list for consistent behavior
-    else:
-        use_none = all(isinstance(s, string_types) for s in defaults)
 
-        # Accumulate (key, value) tuples to be applied to d
-        accumulated = {}
-        for key, val in to_key_val_pairs(defaults):
-            accumulated.setdefault(key, [])
-            if val is not None:
-                accumulated[key].append(val)
+    use_none = not any(isinstance(s, dict) for s in defaults)
 
-        # Update d with accumulated (key, value) pairs, handling nested dot-notated keys
-        for key, val in iteritems(accumulated):
-            v = val[0] if val else None
+    # Accumulate (current, remaining) pairs to be applied to d
 
-            if use_none:
-                default = setdefaults({}, val) if v else None
-                if default and isinstance(d.get(key), dict):
-                    d[key].update(default)
-                else:
-                    d.setdefault(key, default)
-            elif '.' not in key:
-                d.setdefault(key, v if isinstance(v, string_types) else setdefaults({}, val) or v)
+    accumulated = {}
+    for current, remaining in to_key_val_pairs(defaults):
+        accumulated.setdefault(current, [])
+        if remaining is not None:
+            accumulated[current].append(remaining)
+
+    # Update d with accumulated pairs, handling further nested dot-notated keys
+
+    for current, remaining in iteritems(accumulated):
+        if use_none:
+
+            # Apply None value for what remains of the dot notated key
+            defaults = setdefaults(d.get(current, {}), remaining) if remaining else None
+            if defaults and isinstance(d.get(current), dict):
+                d[current].update(defaults)
             else:
-                k, s = key.split('.', 1)
-                d.setdefault(k, {})
-                setdefaults(d[k], [{s: v}])
+                d.setdefault(current, defaults)
 
-        return d
+        else:
+            next_up = remaining[0] if remaining else None
+
+            if '.' in current:
+                # Split on the dot and process next segment
+                k, s = current.split('.', 1)
+                d.setdefault(k, {})
+                setdefaults(d[k], [{s: next_up}])
+            elif isinstance(next_up, string_types):
+                # Set a string value directly
+                d.setdefault(current, next_up)
+            else:
+                # Process a dict value or just set to None
+                d.setdefault(current, setdefaults({}, remaining) if remaining else None)
+
+    return d
 
 
 # LIST, SET, ETC FUNCTIONS #

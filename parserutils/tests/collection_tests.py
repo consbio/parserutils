@@ -1,5 +1,7 @@
 import unittest
 
+from copy import deepcopy
+
 from parserutils.collections import accumulate_items, setdefaults
 from parserutils.collections import filter_empty, flatten_items, reduce_value, wrap_value
 from parserutils.strings import EMPTY_BIN, EMPTY_STR
@@ -99,82 +101,153 @@ class DictsTestCase(unittest.TestCase):
     def test_setdefaults_str(self):
         """ Tests setdefaults with defaults specified as strings """
 
+        inputs = 'a.b'
+
         d = {}
-        inputs, outputs = 'a.b', {'a': {'b': None}}
-        self.assertEqual(setdefaults(d, inputs), outputs)
+        o = deepcopy(setdefaults(d, inputs))
+        self.assertEqual(d, o)                       # Output should equal input
+        self.assertEqual(o, {'a': {'b': None}})      # Test against a hard value
+        self.assertEqual(setdefaults(d, inputs), o)  # Test unchanged with multiple runs
 
         d = {'a': 'xxx'}
-        self.assertEqual(setdefaults(d, inputs), d)
+        o = deepcopy(setdefaults(d, inputs))
+        self.assertEqual(d, o)
+        self.assertEqual(o, {'a': 'xxx'})
+        self.assertEqual(setdefaults(d, inputs), o)
 
         d = {'a': {'b': 'xxx'}}
-        self.assertEqual(setdefaults(d, inputs), d)
+        o = deepcopy(setdefaults(d, inputs))
+        self.assertEqual(d, o)
+        self.assertEqual(o, {'a': {'b': 'xxx'}})
+        self.assertEqual(setdefaults(d, inputs), o)
 
         d = {'c': 'xxx'}
-        self.assertEqual(setdefaults(d, inputs)['a'], outputs['a'])
+        o = deepcopy(setdefaults(d, inputs))
+        self.assertEqual(d, o)
+        self.assertEqual(o, {'a': {'b': None}, 'c': 'xxx'})
+        self.assertEqual(setdefaults(d, inputs), o)
+
+        inputs = 'a.b.c'
+
+        d = {}
+        o = deepcopy(setdefaults(d, inputs))
+        self.assertEqual(d, o)
+        self.assertEqual(o, {'a': {'b': {'c': None}}})
+        self.assertEqual(setdefaults(d, inputs), o)
+
+        d = {'a': {'b': {'c': 'xxx'}}}
+        o = deepcopy(setdefaults(d, inputs))
+        self.assertEqual(d, o)
+        self.assertEqual(o, {'a': {'b': {'c': 'xxx'}}})
+        self.assertEqual(setdefaults(d, inputs), o)
 
     def test_setdefaults_dict_nested(self):
         """ Tests setdefaults with nested defaults specified as dicts """
 
-        d = {}
         inputs = {'a.b': 'bbb', 'a.c': 'ccc'}
-        outputs = {'a': {'b': 'bbb', 'c': 'ccc'}}
-        self.assertEqual(setdefaults(d, inputs), outputs)
 
-        d = {'a': 'aaa'}
-        self.assertEqual(setdefaults(d, inputs), d)
+        d = {}
+        o = deepcopy(setdefaults(d, inputs))
+        self.assertEqual(d, o)                                # Output should equal input
+        self.assertEqual(o, {'a': {'b': 'bbb', 'c': 'ccc'}})  # Test against a hard value
+        self.assertEqual(setdefaults(d, inputs), o)           # Test unchanged with multiple runs
+
+        d = {'a': 'xxx'}
+        o = deepcopy(setdefaults(d, inputs))
+        self.assertEqual(d, o)
+        self.assertEqual(o, {'a': 'xxx'})
+        self.assertEqual(setdefaults(d, inputs), o)
 
         d = {'a': {'b': 'xxx'}}
-        self.assertEqual(setdefaults(d, inputs)['a']['c'], outputs['a']['c'])
-        self.assertEqual(setdefaults(d, inputs)['a']['b'], d['a']['b'])
+        o = deepcopy(setdefaults(d, inputs))
+        self.assertEqual(d, o)
+        self.assertEqual(o['a']['c'], 'ccc')
+        self.assertEqual(o['a']['b'], 'xxx')
+        self.assertEqual(setdefaults(d, inputs), o)
 
         d = {'a': {'c': 'xxx'}}
-        self.assertEqual(setdefaults(d, inputs)['a']['b'], outputs['a']['b'])
-        self.assertEqual(setdefaults(d, inputs)['a']['c'], d['a']['c'])
+        o = deepcopy(setdefaults(d, inputs))
+        self.assertEqual(d, o)
+        self.assertEqual(o['a']['b'], 'bbb')
+        self.assertEqual(o['a']['c'], 'xxx')
+        self.assertEqual(setdefaults(d, inputs), o)
 
-        d = {'c': 'ccc'}
-        self.assertEqual(setdefaults(d, inputs)['a'], outputs['a'])
-        self.assertEqual(setdefaults(d, inputs)['a']['c'], d['a']['c'])
+        d = {'c': 'xxx'}
+        o = deepcopy(setdefaults(d, inputs))
+        self.assertEqual(d, o)
+        self.assertEqual(o['a'], {'b': 'bbb', 'c': 'ccc'})
+        self.assertEqual(o['a']['c'], 'ccc')
+        self.assertEqual(o['c'], 'xxx')
+        self.assertEqual(setdefaults(d, inputs), o)
 
     def test_setdefaults_dict_overlapping(self):
         """ Tests setdefaults with overlapping defaults specified as dicts """
 
-        d = {}
         inputs = {'a.b.c': 'ccc', 'a.c.d.e': 'eee'}
-        outputs = {'a': {'b': {'c': 'ccc'}, 'c': {'d': {'e': 'eee'}}}}
-        self.assertEqual(setdefaults(d, inputs), outputs)
+
+        d = {}
+        o = deepcopy(setdefaults(d, inputs))
+        self.assertEqual(d, o)                                                     # Output should equal input
+        self.assertEqual(o, {'a': {'b': {'c': 'ccc'}, 'c': {'d': {'e': 'eee'}}}})  # Test against a hard value
+        self.assertEqual(setdefaults(d, inputs), o)                                # Test unchanged with multiple runs
 
         d = {'a': 'xxx'}
-        self.assertEqual(setdefaults(d, inputs), d)
+        o = deepcopy(setdefaults(d, inputs))
+        self.assertEqual(d, o)
+        self.assertEqual(o, {'a': 'xxx'})
+        self.assertEqual(setdefaults(d, inputs), o)
 
         d = {'a': {'b': 'xxx'}}
-        self.assertEqual(setdefaults(d, inputs)['a']['b'], d['a']['b'])
-        self.assertEqual(setdefaults(d, inputs)['a']['c'], outputs['a']['c'])
+        o = deepcopy(setdefaults(d, inputs))
+        self.assertEqual(d, o)
+        self.assertEqual(o['a']['b'], 'xxx')
+        self.assertEqual(o['a']['c'], {'d': {'e': 'eee'}})
+        self.assertEqual(setdefaults(d, inputs), o)
 
         d = {'a': {'c': 'xxx'}}
-        self.assertEqual(setdefaults(d, inputs)['a']['b'], outputs['a']['b'])
-        self.assertEqual(setdefaults(d, inputs)['a']['c'], d['a']['c'])
+        o = deepcopy(setdefaults(d, inputs))
+        self.assertEqual(d, o)
+        self.assertEqual(o['a']['b'], {'c': 'ccc'})
+        self.assertEqual(o['a']['c'], 'xxx')
+        self.assertEqual(setdefaults(d, inputs), o)
 
         d = {'c': 'xxx'}
-        self.assertEqual(setdefaults(d, inputs)['a'], outputs['a'])
-        self.assertEqual(setdefaults(d, inputs)['c'], d['c'])
+        o = deepcopy(setdefaults(d, inputs))
+        self.assertEqual(d, o)
+        self.assertEqual(o['a'], {'b': {'c': 'ccc'}, 'c': {'d': {'e': 'eee'}}})
+        self.assertEqual(o['c'], 'xxx')
+        self.assertEqual(setdefaults(d, inputs), o)
 
     def test_setdefaults_other(self):
         """ Tests setdefaults with defaults specified as list, set, and tuple """
 
+        inputs = ['a.b', 'a.c']
+
         d = {}
-        inputs, outputs = ['a.b', 'a.c'], {'a': {'b': None, 'c': None}}
-        self.assertEqual(setdefaults(d, inputs), outputs)
+        o = deepcopy(setdefaults(d, inputs))
+        self.assertEqual(d, o)                                                   # Output should equal input
+        self.assertEqual(setdefaults(d, inputs), {'a': {'b': None, 'c': None}})  # Test against a hard value
+        self.assertEqual(setdefaults(d, inputs), o)                              # Test unchanged with multiple runs
 
         d = {'a': 'xxx'}
-        self.assertEqual(setdefaults(d, inputs), d)
+        o = deepcopy(setdefaults(d, inputs))
+        self.assertEqual(d, o)
+        self.assertEqual(setdefaults(d, inputs), {'a': 'xxx'})
+        self.assertEqual(setdefaults(d, inputs), o)
 
         d = {'a': {'b': 'xxx'}}
-        self.assertEqual(setdefaults(d, inputs)['a']['b'], d['a']['b'])
-        self.assertEqual(setdefaults(d, inputs)['a']['c'], outputs['a']['c'])
+        o = deepcopy(setdefaults(d, inputs))
+        self.assertEqual(d, o)
+        self.assertEqual(setdefaults(d, inputs)['a']['b'], 'xxx')
+        self.assertEqual(setdefaults(d, inputs)['a']['c'], None)
+        self.assertEqual(setdefaults(d, inputs), o)
 
-        d = {'c': 'ccc'}
-        self.assertEqual(setdefaults(d, inputs)['a'], outputs['a'])
-        self.assertEqual(setdefaults(d, inputs)['c'], d['c'])
+        d = {'c': 'xxx'}
+        o = deepcopy(setdefaults(d, inputs))
+        self.assertEqual(d, o)
+        self.assertEqual(setdefaults(d, inputs)['a'], {'b': None, 'c': None})
+        self.assertEqual(setdefaults(d, inputs)['c'], 'xxx')
+        self.assertEqual(setdefaults(d, inputs), o)
 
 
 class ListTupleSetTestCase(unittest.TestCase):
