@@ -90,8 +90,8 @@ def setdefaults(d, defaults):
                 # Set a string value directly
                 d.setdefault(current, next_up)
             else:
-                # Process a dict value or just set to None
-                d.setdefault(current, setdefaults({}, remaining) if remaining else None)
+                # Process a dict value or just set to the value in next_up
+                d.setdefault(current, setdefaults({}, remaining) or next_up)
 
     return d
 

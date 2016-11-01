@@ -93,6 +93,11 @@ class DictsTestCase(unittest.TestCase):
         self.assertEqual(setdefaults({}, 'a'), {'a': None})
         self.assertEqual(setdefaults({}, ['b']), {'b': None})
         self.assertEqual(setdefaults({}, {'c': None}), {'c': None})
+        self.assertEqual(setdefaults({}, {'c': False}), {'c': False})
+        self.assertEqual(setdefaults({}, {'c': True}), {'c': True})
+        self.assertEqual(setdefaults({}, {'c': 0}), {'c': 0})
+        self.assertEqual(setdefaults({}, {'c': 1}), {'c': 1})
+        self.assertEqual(setdefaults({}, {'c': 2.3}), {'c': 2.3})
         self.assertEqual(setdefaults({}, {'d': 'ddd'}), {'d': 'ddd'})
         self.assertEqual(setdefaults({}, [{'e': 'eee'}, {'f': 'fff'}]), {'e': 'eee', 'f': 'fff'})
         self.assertEqual(setdefaults({}, {'x': 'xxx', 'y': 'yyy'}), {'x': 'xxx', 'y': 'yyy'})
@@ -178,6 +183,29 @@ class DictsTestCase(unittest.TestCase):
         self.assertEqual(o['a'], {'b': 'bbb', 'c': 'ccc'})
         self.assertEqual(o['a']['c'], 'ccc')
         self.assertEqual(o['c'], 'xxx')
+        self.assertEqual(setdefaults(d, inputs), o)
+
+        inputs = {'a.b.c': True, 'd.e.f': [123.456]}
+
+        d = {}
+        o = deepcopy(setdefaults(d, inputs))
+        self.assertEqual(d, o)
+        self.assertEqual(o['a'], {'b': {'c': True}})
+        self.assertEqual(o['d'], {'e': {'f': [123.456]}})
+        self.assertEqual(setdefaults(d, inputs), o)
+
+        d = {'a': {'b': {'c': 'xxx'}}}
+        o = deepcopy(setdefaults(d, inputs))
+        self.assertEqual(d, o)
+        self.assertEqual(o['a'], {'b': {'c': 'xxx'}})
+        self.assertEqual(o['d'], {'e': {'f': [123.456]}})
+        self.assertEqual(setdefaults(d, inputs), o)
+
+        d = {'d': {'e': {'f': 'xxx'}}}
+        o = deepcopy(setdefaults(d, inputs))
+        self.assertEqual(d, o)
+        self.assertEqual(o['a'], {'b': {'c': True}})
+        self.assertEqual(o['d'], {'e': {'f': 'xxx'}})
         self.assertEqual(setdefaults(d, inputs), o)
 
     def test_setdefaults_dict_overlapping(self):
