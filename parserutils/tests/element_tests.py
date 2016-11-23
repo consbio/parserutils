@@ -1,7 +1,7 @@
 import os
 import unittest
 
-from six import iteritems, string_types, text_type, StringIO
+from six import binary_type, iteritems, string_types, text_type, StringIO
 
 from parserutils.elements import Element, ElementTree, ElementType
 from parserutils.elements import iselement, fromstring
@@ -15,11 +15,10 @@ from parserutils.elements import set_element_attributes, remove_element_attribut
 from parserutils.elements import get_element_tail, get_elements_tail, get_element_text, get_elements_text
 from parserutils.elements import set_element_tail, set_elements_tail, set_element_text, set_elements_text
 from parserutils.elements import dict_to_element, element_to_dict, element_to_object
-from parserutils.elements import element_to_string, string_to_element, strip_namespaces
+from parserutils.elements import element_to_string, string_to_element, strip_namespaces, strip_xml_declaration
 from parserutils.elements import iter_elements, iterparse_elements, write_element
 
-from parserutils.strings import EMPTY_BIN, EMPTY_STR
-
+from parserutils.strings import DEFAULT_ENCODING, EMPTY_BIN, EMPTY_STR
 
 ELEM_NAME = 'tag'
 ELEM_TEXT = 'text'
@@ -44,17 +43,28 @@ class XMLTestCase(unittest.TestCase):
         dir_name = os.path.dirname(os.path.abspath(__file__))
         self.data_dir = sep.join((dir_name, 'data'))
 
-        self.elem_data_file_path = sep.join((self.data_dir, 'elem_data.xml'))
+        self.elem_ascii_file_path = sep.join((self.data_dir, 'elem_data_ascii.xml'))
+        self.elem_data_file_path = sep.join((self.data_dir, 'elem_data_unicode.xml'))
         self.namespace_file_path = sep.join((self.data_dir, 'namespace_data.xml'))
         self.test_file_path = sep.join((self.data_dir, 'test_data.xml'))
 
-        self.elem_data_file = open(self.elem_data_file_path)
-        self.namespace_file = open(self.namespace_file_path)
+        self.elem_ascii_file = open(self.elem_ascii_file_path)
+        self.elem_data_file = open(self.elem_data_file_path, 'rb')
+        self.namespace_file = open(self.namespace_file_path, 'rb')
 
-        with open(sep.join((self.data_dir, 'elem_data.xml'))) as data:
+        with open(self.elem_ascii_file_path) as data:
+            self.elem_ascii_str = data.read()
+        with open(self.elem_data_file_path, 'rb') as data:
             self.elem_data_str = data.read()
 
-        self.elem_data_bin = self.elem_data_str.encode()
+        if not isinstance(self.elem_data_str, string_types):
+            self.elem_data_str = self.elem_data_str.decode(DEFAULT_ENCODING)
+
+        if isinstance(self.elem_data_str, binary_type):
+            self.elem_data_bin = self.elem_data_str
+        else:
+            self.elem_data_bin = self.elem_data_str.encode(DEFAULT_ENCODING)
+
         self.elem_data_dict = element_to_dict(self.elem_data_str)
         self.elem_data_reader = StringIO(self.elem_data_str)
 
@@ -62,7 +72,7 @@ class XMLTestCase(unittest.TestCase):
             fromstring(self.elem_data_str), ElementTree(fromstring(self.elem_data_str)),
             self.elem_data_file, self.elem_data_bin, self.elem_data_str, self.elem_data_dict, self.elem_data_reader
         )
-        self.elem_empty_inputs = (None, _EMPTY_XML_1, _EMPTY_XML_2, EMPTY_BIN, EMPTY_STR, StringIO(u''), ElementTree())
+        self.elem_empty_inputs = (None, _EMPTY_XML_1, _EMPTY_XML_2, EMPTY_BIN, EMPTY_STR, StringIO(''), ElementTree())
 
         self.elem_xpath = 'c'
 
@@ -127,7 +137,7 @@ class XMLTestCase(unittest.TestCase):
         prop2 = self._reduce_property(getattr(that_elem, prop))
 
         self.assertEqual(prop1, prop2,
-            'Element {0} properties are not equal at /{1}: "{2}" ({3}) != "{4}" ({5})'.format(
+            u'Element {0} properties are not equal at /{1}: "{2}" ({3}) != "{4}" ({5})'.format(
                 prop, elem_name, prop1, type(prop1).__name__, prop2, type(prop2).__name__
             )
         )
@@ -188,7 +198,12 @@ class XMLTests(XMLTestCase):
 
         self.assert_element_trees_are_equal(
             create_element_tree('root', ELEM_TEXT, a='aaa', b='bbb'),
-            create_element_tree(fromstring('<root a="aaa" b="bbb">text</root>'))
+            create_element_tree(fromstring(b'<root a="aaa" b="bbb">text</root>'))
+        )
+
+        self.assert_element_trees_are_equal(
+            create_element_tree('root', ELEM_TEXT, a='aaa', b='bbb'),
+            create_element_tree(fromstring(u'<root a="aaa" b="bbb">text</root>'))
         )
 
     def test_clear_children(self):
@@ -288,20 +303,28 @@ class XMLTests(XMLTestCase):
 
         self.assertIsNone(get_remote_element(None), 'None check failed for get_remote_element')
 
-        file_path = self.elem_data_file_path
+        file_path = self.elem_ascii_file_path
         self.assertIsNotNone(
-            get_remote_element(file_path), 'Remote element returns None for file'
+            get_remote_element(file_path), 'Remote element returns None for ascii file'
         )
         self.assertIsNotNone(
-            get_remote_element(file_path, 'b'), 'Remote element returns None for "b"'
+            get_remote_element(file_path, 'b'), 'Remote element returns None for ascii file at "b"'
+        )
+
+        file_path = self.elem_data_file_path
+        self.assertIsNotNone(
+            get_remote_element(file_path), 'Remote element returns None for unicode file'
+        )
+        self.assertIsNotNone(
+            get_remote_element(file_path, 'b'), 'Remote element returns None for unicode file at "b"'
         )
 
         file_path = self.namespace_file_path
         self.assertIsNotNone(
-            get_remote_element(file_path), 'Remote element returns None for namespaces'
+            get_remote_element(file_path), 'Remote element returns None for namespaces file'
         )
         self.assertIsNotNone(
-            get_remote_element(file_path, 'c'), 'Remote element returns None for "c"'
+            get_remote_element(file_path, 'c'), 'Remote element returns None for namespaces at "c"'
         )
 
         remote_url = 'http://en.wikipedia.org/wiki/XML'
@@ -428,7 +451,8 @@ class XMLTests(XMLTestCase):
         self.assertEqual(EMPTY_STR, element_to_string(StringIO('')), 'StringIO check failed for element_to_string')
 
         self.assertEqual(
-            self.elem_data_str, element_to_string(fromstring(self.elem_data_str), None, None),
+            self.elem_data_bin.decode(DEFAULT_ENCODING).replace(os.linesep, '\n').strip(),
+            element_to_string(fromstring(self.elem_data_str), include_declaration=False),
             'Raw string check failed for element_to_string'
         )
 
@@ -447,12 +471,12 @@ class XMLTests(XMLTestCase):
     def test_element_to_string_wout_dec(self):
         """ Tests conversion from different data sources to XML, with and without a declaration line """
 
-        as_string = element_to_string(fromstring(self.elem_data_str), None, None)
+        as_string = element_to_string(fromstring(self.elem_data_str), include_declaration=False)
 
         for data in self.elem_data_inputs:
             data_type = type(data).__name__
             self.assertEqual(
-                element_to_string(data, None, None), as_string,
+                element_to_string(data, include_declaration=False), as_string,
                 'Without declaration check failed for element_to_string for {0}'.format(data_type)
             )
 
@@ -474,7 +498,7 @@ class XMLTests(XMLTestCase):
         # Ensure binary and string reader objects are processed
 
         self.assert_elements_are_equal(
-            string_to_element(self.elem_data_str.encode()), parsed,
+            string_to_element(self.elem_data_bin), parsed,
             'Binary equality test failed for string_to_element'
         )
         self.assert_elements_are_equal(
@@ -497,7 +521,7 @@ class XMLTests(XMLTestCase):
 
         # Test include_namespaces: parsing of name-spaced and stripped string data
 
-        with open(self.namespace_file_path) as data:
+        with open(self.namespace_file_path, 'rb') as data:
             namespaced = data.read()
 
             unstripped = string_to_element(namespaced, include_namespaces=True)
@@ -513,9 +537,10 @@ class XMLTests(XMLTestCase):
         """ Tests iter_elements with a custom function on elements from different data sourcs """
 
         self.assertIsNone(iter_elements(None, None), 'None check failed for iter_elements')
-        self.assert_elements_are_equal(fromstring('<a/>'), iter_elements(set_element_attributes, '<a/>'))
+        self.assert_elements_are_equal(fromstring(b'<a/>'), iter_elements(set_element_attributes, '<a/>'))
+        self.assert_elements_are_equal(fromstring(u'<a/>'), iter_elements(set_element_attributes, b'<a/>'))
 
-        base_elem = fromstring('<a><b /><c /></a>').find(self.elem_xpath)
+        base_elem = fromstring(u'<a><b /><c /></a>').find(self.elem_xpath)
         base_elem.attrib = {'x': 'xxx', 'y': 'yyy', 'z': 'zzz'}
 
         def iter_elements_func(elem, **attrib_kwargs):
@@ -533,13 +558,17 @@ class XMLTests(XMLTestCase):
         self.assertIsNone(iterparse_elements(EMPTY_STR, None), 'Empty check failed for iter_elements')
 
         # Test with file path and file object
-        self._test_iterparse_elements_op(self.elem_data_file)
-        self._test_iterparse_elements_op(self.elem_data_file_path)
+        self._test_iterparse_elements_op(self.elem_ascii_file, self.elem_ascii_str)
+        self._test_iterparse_elements_op(self.elem_ascii_file_path, self.elem_ascii_str)
 
-    def _test_iterparse_elements_op(self, elem_to_parse):
+        # Test with file path and file object
+        self._test_iterparse_elements_op(self.elem_data_file, self.elem_data_str)
+        self._test_iterparse_elements_op(self.elem_data_file_path, self.elem_data_str)
+
+    def _test_iterparse_elements_op(self, elem_to_parse, target_string):
 
         base_attribs = {'x': 'xxx', 'y': 'yyy', 'z': 'zzz'}
-        base_elem = fromstring('<a />')
+        base_elem = fromstring(u'<a />')
 
         def iterparse_func(elem, **attrib_kwargs):
             """
@@ -554,7 +583,7 @@ class XMLTests(XMLTestCase):
 
         iterparse_elements(iterparse_func, elem_to_parse, **base_attribs)
 
-        existing_elem = fromstring(self.elem_data_str).find(self.elem_xpath)
+        existing_elem = fromstring(target_string).find(self.elem_xpath)
         existing_elem.attrib = base_attribs
 
         self.assert_elements_are_equal(base_elem.find(self.elem_xpath), existing_elem)
@@ -563,19 +592,25 @@ class XMLTests(XMLTestCase):
         """ Tests namespace stripping by comparing equivalent XML from different data sources """
 
         self.assertEqual(strip_namespaces(None), None, 'None check failed for strip_namespaces')
+        self.assertEqual(strip_namespaces(EMPTY_BIN), u'', 'Bin check failed for strip_namespaces')
+        self.assertEqual(strip_namespaces(EMPTY_STR), u'', 'Str check failed for strip_namespaces')
+        self.assertEqual(strip_namespaces(StringIO('')), u'', 'IO check failed for strip_namespaces')
+        self.assertEqual(strip_namespaces([]), [], 'List check failed for strip_namespaces')
 
         self._test_strip_namespaces(self.namespace_file)
 
     def test_strip_namespaces_with_binary(self):
         """ Tests namespace stripping by comparing equivalent XML from different data sources """
 
-        with open(self.namespace_file_path) as data:
-            self._test_strip_namespaces(data.read().encode())
+        with open(self.namespace_file_path, 'rb') as data:
+            xml_content = data.read()
+
+        self._test_strip_namespaces(xml_content)
 
     def test_strip_namespaces_with_string(self):
         """ Tests namespace stripping by comparing equivalent XML from different data sources """
 
-        with open(self.namespace_file_path) as data:
+        with open(self.namespace_file_path, 'rb') as data:
             self._test_strip_namespaces(data.read())
 
     def _test_strip_namespaces(self, to_strip):
@@ -585,6 +620,22 @@ class XMLTests(XMLTestCase):
 
         for data in self.elem_data_inputs:
             self.assert_elements_are_equal(get_element(data), stripped)
+
+    def test_strip_xml_declaration(self):
+        """ Tests namespace stripping by comparing equivalent XML from different data sources """
+
+        self.assertEqual(strip_xml_declaration(None), None, 'None check failed for strip_xml_declaration')
+        self.assertEqual(strip_xml_declaration(EMPTY_BIN), u'', 'Bin check failed for strip_xml_declaration')
+        self.assertEqual(strip_xml_declaration(EMPTY_STR), u'', 'Str check failed for strip_xml_declaration')
+        self.assertEqual(strip_xml_declaration(StringIO('')), u'', 'IO check failed for strip_xml_declaration')
+        self.assertEqual(strip_xml_declaration([]), [], 'List check failed for strip_xml_declaration')
+
+        target = u'<root a="aaa" b="bbb">text</root>'
+        test_unicode = _EMPTY_XML_1 + target
+        test_binary = test_unicode.encode(DEFAULT_ENCODING)
+
+        self.assertEqual(strip_xml_declaration(test_unicode), target, 'Unicode check failed for strip_xml_declaration')
+        self.assertEqual(strip_xml_declaration(test_binary), target, 'Binary check failed for strip_xml_declaration')
 
     def test_write_element_to_path(self):
         """ Tests writing an element to a file path, reading it in, and testing the content for equality """
@@ -596,7 +647,7 @@ class XMLTests(XMLTestCase):
 
             write_element(data, self.test_file_path)
 
-            with open(self.test_file_path) as test:
+            with open(self.test_file_path, 'rb') as test:
                 self.assert_elements_are_equal(get_element(test), fromstring(self.elem_data_str))
 
     def test_write_element_to_file(self):
@@ -610,7 +661,7 @@ class XMLTests(XMLTestCase):
             with open(self.test_file_path, 'wb') as test:
                 write_element(data, test)
 
-            with open(self.test_file_path) as test:
+            with open(self.test_file_path, 'rb') as test:
                 self.assert_elements_are_equal(get_element(test), fromstring(self.elem_data_str))
 
 

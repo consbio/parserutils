@@ -857,20 +857,22 @@ def _element_to_object(element):
     return obj
 
 
-def element_to_string(element, encoding=DEFAULT_ENCODING, method='xml'):
+def element_to_string(element, include_declaration=True, encoding=DEFAULT_ENCODING, method='xml'):
     """ :return: the string value of the element or element tree """
 
-    # No Parsing of Element here, since String is the destination
     if isinstance(element, ElementTree):
         element = element.getroot()
     elif not isinstance(element, ElementType):
         element = get_element(element)
 
-    # Elements have 'iter' as opposed to '__iter__'
-    if hasattr(element, 'iter'):
-        return tostring(element, encoding, method).decode(encoding=DEFAULT_ENCODING)
+    if element is None:
+        return u''
 
-    return u''
+    element_as_string = tostring(element, encoding, method).decode(encoding=encoding)
+    if include_declaration:
+        return element_as_string
+    else:
+        return strip_xml_declaration(element_as_string)
 
 
 def string_to_element(element_as_string, include_namespaces=False):
@@ -882,26 +884,17 @@ def string_to_element(element_as_string, include_namespaces=False):
         return element_as_string.getroot()
     elif isinstance(element_as_string, ElementType):
         return element_as_string
+    else:
+        element_as_string = _xml_content_to_string(element_as_string)
 
-    if isinstance(element_as_string, string_types):
-        # For Python 2 compliance: FIRST check basestring before str
-        element_as_string = element_as_string.strip()
-    elif isinstance(element_as_string, binary_type):
-        # For Python 3 compliance: NOW decode binary arrays (not Python 2 str)
-        element_as_string = element_as_string.decode(encoding=DEFAULT_ENCODING).strip()
-    elif hasattr(element_as_string, 'read'):
-        # Handles files, but more importantly StringIO
-        element_as_string = element_as_string.read().strip()
-
-    if not isinstance(element_as_string, string_types):
+    if element_as_string is None:
+        return None
+    elif not isinstance(element_as_string, string_types):
         # Let cElementTree handle the error
         return fromstring(element_as_string)
-
-    # For Python 2 compliance: replacement string must not specify unicode u''
-    element_as_string = _XML_DECLARATION_REGEX.sub('', element_as_string, 1)
-
-    if not element_as_string:
-        return None  # Same as ElementTree().getroot()
+    elif not strip_xml_declaration(element_as_string):
+        # Same as ElementTree().getroot()
+        return None
     elif include_namespaces:
         return fromstring(element_as_string)
     else:
@@ -961,18 +954,13 @@ def strip_namespaces(file_or_xml):
     If file_or_xml is not a file or string, it is returned as is.
     """
 
-    if isinstance(file_or_xml, string_types):
-        xml_content = file_or_xml
-    elif isinstance(file_or_xml, binary_type):
-        xml_content = file_or_xml.decode(encoding=DEFAULT_ENCODING)
-    elif hasattr(file_or_xml, 'read'):
-        xml_content = file_or_xml.read()
-    else:
-        return file_or_xml
+    xml_content = _xml_content_to_string(file_or_xml)
+    if not isinstance(xml_content, string_types):
+        return xml_content
 
     # This pattern can have overlapping matches, necessitating the loop
     while _NAMESPACES_FROM_DEC_REGEX.search(xml_content) is not None:
-        xml_content = _NAMESPACES_FROM_DEC_REGEX.sub('\\1', xml_content)
+        xml_content = _NAMESPACES_FROM_DEC_REGEX.sub(r'\1', xml_content)
 
     # Remove namespaces at the tag level
     xml_content = _NAMESPACES_FROM_TAG_REGEX.sub(r'\1', xml_content)
@@ -981,6 +969,35 @@ def strip_namespaces(file_or_xml):
     xml_content = _NAMESPACES_FROM_ATTR_REGEX.sub(r'\1\3', xml_content)
 
     return xml_content
+
+
+def strip_xml_declaration(file_or_xml):
+    """
+    Removes XML declaration line from file or string passed in.
+    If file_or_xml is not a file or string, it is returned as is.
+    """
+
+    xml_content = _xml_content_to_string(file_or_xml)
+    if not isinstance(xml_content, string_types):
+        return xml_content
+
+    # For Python 2 compliance: replacement string must not specify unicode u''
+    return _XML_DECLARATION_REGEX.sub(r'', xml_content, 1)
+
+
+def _xml_content_to_string(file_or_xml):
+
+    if isinstance(file_or_xml, string_types):
+        # For Python 2 compliance: FIRST check basestring before str
+        return file_or_xml.strip()
+    elif isinstance(file_or_xml, binary_type):
+        # For Python 3 compliance: NOW decode binary arrays (not Python 2 str)
+        return file_or_xml.decode(encoding=DEFAULT_ENCODING).strip()
+    elif hasattr(file_or_xml, 'read'):
+        # Handles files with unicode or binary, but more importantly StringIO
+        return _xml_content_to_string(file_or_xml.read())
+    else:
+        return file_or_xml
 
 
 def write_element(elem_to_parse, file_or_path, encoding=DEFAULT_ENCODING):
