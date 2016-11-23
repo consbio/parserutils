@@ -897,7 +897,8 @@ def string_to_element(element_as_string, include_namespaces=False):
         # Let cElementTree handle the error
         return fromstring(element_as_string)
 
-    element_as_string = _XML_DECLARATION_REGEX.sub(u'', element_as_string, 1)
+    # For Python 2 compliance: replacement string must not specify unicode u''
+    element_as_string = _XML_DECLARATION_REGEX.sub('', element_as_string, 1)
 
     if not element_as_string:
         return None  # Same as ElementTree().getroot()
