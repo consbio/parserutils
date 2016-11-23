@@ -887,9 +887,7 @@ def string_to_element(element_as_string, include_namespaces=False):
     else:
         element_as_string = _xml_content_to_string(element_as_string)
 
-    if element_as_string is None:
-        return None
-    elif not isinstance(element_as_string, string_types):
+    if not isinstance(element_as_string, string_types):
         # Let cElementTree handle the error
         return fromstring(element_as_string)
     elif not strip_xml_declaration(element_as_string):
