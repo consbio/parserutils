@@ -3,7 +3,7 @@ import unittest
 from copy import deepcopy
 
 from parserutils.collections import accumulate_items, setdefaults
-from parserutils.collections import filter_empty, flatten_items, reduce_value, wrap_value
+from parserutils.collections import filter_empty, flatten_items, rfind, rindex, reduce_value, wrap_value
 from parserutils.strings import EMPTY_BIN, EMPTY_STR
 
 
@@ -465,6 +465,136 @@ class ListTupleSetTestCase(unittest.TestCase):
 
             self.assertEqual(flatten_items(f for f in flat_to_recurse), list(flat_no_recurse))
             self.assertEqual(flatten_items((f for f in flat_to_recurse), True), list(flat_after_recurse))
+
+    def test_rfind(self):
+        """ Tests rfind with general inputs """
+
+        # Test empty cases: nothing to find
+        self.assertEqual(rfind(None, 'x'), -1)
+        self.assertEqual(rfind(EMPTY_BIN, 'x'), -1)
+        self.assertEqual(rfind(EMPTY_BIN, b'x'), -1)
+        self.assertEqual(rfind(EMPTY_STR, 'x'), -1)
+        self.assertEqual(rfind(EMPTY_STR, b'x'), -1)
+        self.assertEqual(rfind(list(), 'x'), -1)
+        self.assertEqual(rfind(tuple(), 'x'), -1)
+        self.assertEqual(rfind(set(), 'x'), -1)
+        self.assertEqual(rfind(dict(), 'x'), -1)
+
+        # Test missing cases: still nothing to find
+        self.assertEqual(rfind(b'abc', 'x'), -1)
+        self.assertEqual(rfind(b'abc', b'x'), -1)
+        self.assertEqual(rfind(u'abc', 'x'), -1)
+        self.assertEqual(rfind(u'abc', b'x'), -1)
+        self.assertEqual(rfind(['a', 'b', 'c'], 'x'), -1)
+        self.assertEqual(rfind(('a', 'b', 'c'), 'x'), -1)
+        self.assertEqual(rfind({'a', 'b', 'c'}, 'x'), -1)
+        self.assertEqual(rfind({'a': 'aaa', 'b': 'bbb', 'c': 'ccc'}, 'x'), -1)
+
+        # Test invalid cases: still nothing to find
+        self.assertEqual(rfind({'x', 'y', 'z'}, 'x'), -1)
+        self.assertEqual(rfind({'x': 'xxx', 'y': 'yyy', 'z': 'zzz'}, 'x'), -1)
+
+        # Test one match cases: find at first, middle and last
+        self.assertEqual(rfind(b'xyz', 'x'), 0)
+        self.assertEqual(rfind(b'yxz', 'x'), 1)
+        self.assertEqual(rfind(b'zyx', 'x'), 2)
+        self.assertEqual(rfind(b'xyz', b'x'), 0)
+        self.assertEqual(rfind(b'yxz', b'x'), 1)
+        self.assertEqual(rfind(b'zyx', b'x'), 2)
+        self.assertEqual(rfind(u'xyz', 'x'), 0)
+        self.assertEqual(rfind(u'yxz', 'x'), 1)
+        self.assertEqual(rfind(u'zyx', 'x'), 2)
+        self.assertEqual(rfind(u'xyz', b'x'), 0)
+        self.assertEqual(rfind(u'yxz', b'x'), 1)
+        self.assertEqual(rfind(u'zyx', b'x'), 2)
+        self.assertEqual(rfind(['x', 'y', 'z'], 'x'), 0)
+        self.assertEqual(rfind(['y', 'x', 'z'], 'x'), 1)
+        self.assertEqual(rfind(['z', 'y', 'x'], 'x'), 2)
+        self.assertEqual(rfind(('x', 'y', 'z'), 'x'), 0)
+        self.assertEqual(rfind(('y', 'x', 'z'), 'x'), 1)
+        self.assertEqual(rfind(('z', 'y', 'x'), 'x'), 2)
+
+        # Test multiple match cases: find at middle and last
+        self.assertEqual(rfind(b'xxz', 'x'), 1)
+        self.assertEqual(rfind(b'xyx', 'x'), 2)
+        self.assertEqual(rfind(b'xxz', b'x'), 1)
+        self.assertEqual(rfind(b'xyx', b'x'), 2)
+        self.assertEqual(rfind(u'xxz', 'x'), 1)
+        self.assertEqual(rfind(u'xyx', 'x'), 2)
+        self.assertEqual(rfind(u'xxz', b'x'), 1)
+        self.assertEqual(rfind(u'xyx', b'x'), 2)
+        self.assertEqual(rfind(['x', 'x', 'z'], 'x'), 1)
+        self.assertEqual(rfind(['x', 'y', 'x'], 'x'), 2)
+        self.assertEqual(rfind(('x', 'x', 'z'), 'x'), 1)
+        self.assertEqual(rfind(('x', 'y', 'x'), 'x'), 2)
+
+    def test_rindex(self):
+        """ Tests rindex with general inputs """
+
+        # Test valid empty cases: raise ValueError
+        for empty in (EMPTY_BIN, EMPTY_STR, list(), tuple()):
+            with self.assertRaises(ValueError):
+                rindex(empty, b'x')
+            with self.assertRaises(ValueError):
+                rindex(empty, u'x')
+
+        # Test invalid empty cases: raise TypeError
+        for empty in (None, set(), dict()):
+            with self.assertRaises(TypeError):
+                rindex(empty, b'x')
+            with self.assertRaises(TypeError):
+                rindex(empty, u'x')
+
+        # Test valid missing cases: raise ValueError
+        for empty in (b'abc', u'abc', ['a', 'b', 'c'], ('a', 'b', 'c')):
+            with self.assertRaises(ValueError):
+                rindex(empty, b'x')
+            with self.assertRaises(ValueError):
+                rindex(empty, u'x')
+
+        # Test invalid missing cases: raise TypeError
+        for empty in ({'a', 'b', 'c'}, {'a': 'aaa', 'b': 'bbb', 'c': 'ccc'}):
+            with self.assertRaises(TypeError):
+                rindex(empty, 'x')
+
+        # Test invalid matching cases: raise TypeError
+        for empty in ({'x', 'y', 'z'}, {'x': 'xxx', 'y': 'yyy', 'z': 'zzz'}):
+            with self.assertRaises(TypeError):
+                rindex(empty, 'x')
+
+        # Test one match cases: find at first, middle and last
+        self.assertEqual(rindex(b'xyz', 'x'), 0)
+        self.assertEqual(rindex(b'yxz', 'x'), 1)
+        self.assertEqual(rindex(b'zyx', 'x'), 2)
+        self.assertEqual(rindex(b'xyz', b'x'), 0)
+        self.assertEqual(rindex(b'yxz', b'x'), 1)
+        self.assertEqual(rindex(b'zyx', b'x'), 2)
+        self.assertEqual(rindex(u'xyz', 'x'), 0)
+        self.assertEqual(rindex(u'yxz', 'x'), 1)
+        self.assertEqual(rindex(u'zyx', 'x'), 2)
+        self.assertEqual(rindex(u'xyz', b'x'), 0)
+        self.assertEqual(rindex(u'yxz', b'x'), 1)
+        self.assertEqual(rindex(u'zyx', b'x'), 2)
+        self.assertEqual(rindex(['x', 'y', 'z'], 'x'), 0)
+        self.assertEqual(rindex(['y', 'x', 'z'], 'x'), 1)
+        self.assertEqual(rindex(['z', 'y', 'x'], 'x'), 2)
+        self.assertEqual(rindex(('x', 'y', 'z'), 'x'), 0)
+        self.assertEqual(rindex(('y', 'x', 'z'), 'x'), 1)
+        self.assertEqual(rindex(('z', 'y', 'x'), 'x'), 2)
+
+        # Test multiple match cases: find at middle and last
+        self.assertEqual(rfind(b'xxz', 'x'), 1)
+        self.assertEqual(rfind(b'xyx', 'x'), 2)
+        self.assertEqual(rfind(b'xxz', b'x'), 1)
+        self.assertEqual(rfind(b'xyx', b'x'), 2)
+        self.assertEqual(rfind(u'xxz', 'x'), 1)
+        self.assertEqual(rfind(u'xyx', 'x'), 2)
+        self.assertEqual(rfind(u'xxz', b'x'), 1)
+        self.assertEqual(rfind(u'xyx', b'x'), 2)
+        self.assertEqual(rfind(['x', 'x', 'z'], 'x'), 1)
+        self.assertEqual(rfind(['x', 'y', 'x'], 'x'), 2)
+        self.assertEqual(rfind(('x', 'x', 'z'), 'x'), 1)
+        self.assertEqual(rfind(('x', 'y', 'x'), 'x'), 2)
 
     def test_reduce_value(self):
         """ Tests reduce_value with general inputs """

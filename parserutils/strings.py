@@ -5,7 +5,9 @@ from string import ascii_letters, digits, punctuation
 from six import binary_type, text_type, string_types
 
 
-_STRING_TYPES = (binary_type, string_types)
+# Reduce types to minimum possible (in Python 2 there are duplicates)
+_STRING_TYPES = tuple(t for t in {binary_type, string_types[0]})
+
 
 ALPHANUMERIC = set(ascii_letters + digits)
 PUNCTUATION = set(punctuation)

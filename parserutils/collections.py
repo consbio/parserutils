@@ -1,8 +1,8 @@
 from _collections import defaultdict
 
-from six import iteritems, string_types
+from six import iteritems
 
-from parserutils.strings import EMPTY_STR, _STRING_TYPES
+from parserutils.strings import DEFAULT_ENCODING, EMPTY_STR, _STRING_TYPES
 
 
 # DICT FUNCTIONS #
@@ -35,22 +35,6 @@ def setdefaults(d, defaults):
         {'a.b.c': 'ccc', 'a.c.d.e': 'eee'} --> {'a': {'b': {'c': 'ccc'}, 'c': {'d': {'e': 'eee'}}}}
     """
 
-    def to_key_val_pairs(defs):
-        """ Helper to split strings, lists and dicts into (current, value) tuples for accumulation """
-
-        if isinstance(defs, string_types):
-            # Convert 'a' to [('a', None)], or 'a.b.c' to [('a', 'b.c')]
-            return [defs.split('.', 1) if '.' in defs else (defs, None)]
-        else:
-            pairs = []
-
-            # Convert collections of strings or lists as above; break dicts into component items
-            pairs.extend(p for s in defs if isinstance(s, string_types) for p in to_key_val_pairs(s))
-            pairs.extend(p for l in defs if isinstance(l, list) for p in to_key_val_pairs(l))
-            pairs.extend(p for d in defs if isinstance(d, dict) for p in iteritems(d))
-
-            return pairs
-
     if not isinstance(d, dict) or defaults is None:
         return d
     elif isinstance(defaults, _wrap_types):
@@ -61,7 +45,7 @@ def setdefaults(d, defaults):
     # Accumulate (current, remaining) pairs to be applied to d
 
     accumulated = {}
-    for current, remaining in to_key_val_pairs(defaults):
+    for current, remaining in _to_key_val_pairs(defaults):
         accumulated.setdefault(current, [])
         if remaining is not None:
             accumulated[current].append(remaining)
@@ -86,7 +70,7 @@ def setdefaults(d, defaults):
                 k, s = current.split('.', 1)
                 d.setdefault(k, {})
                 setdefaults(d[k], [{s: next_up}])
-            elif isinstance(next_up, string_types):
+            elif isinstance(next_up, _STRING_TYPES):
                 # Set a string value directly
                 d.setdefault(current, next_up)
             else:
@@ -94,6 +78,23 @@ def setdefaults(d, defaults):
                 d.setdefault(current, setdefaults({}, remaining) or next_up)
 
     return d
+
+
+def _to_key_val_pairs(defs):
+    """ Helper to split strings, lists and dicts into (current, value) tuples for accumulation """
+
+    if isinstance(defs, _STRING_TYPES):
+        # Convert 'a' to [('a', None)], or 'a.b.c' to [('a', 'b.c')]
+        return [defs.split('.', 1) if '.' in defs else (defs, None)]
+    else:
+        pairs = []
+
+        # Convert collections of strings or lists as above; break dicts into component items
+        pairs.extend(p for s in defs if isinstance(s, _STRING_TYPES) for p in _to_key_val_pairs(s))
+        pairs.extend(p for l in defs if isinstance(l, list) for p in _to_key_val_pairs(l))
+        pairs.extend(p for d in defs if isinstance(d, dict) for p in iteritems(d))
+
+        return pairs
 
 
 # LIST, SET, ETC FUNCTIONS #
@@ -147,6 +148,32 @@ def flatten_items(items, recurse=False):
 
 _flatten_types = (tuple, set)
 _flattened_types = (dict,) + _STRING_TYPES
+
+
+def rfind(values, value):
+    """ :return: the highest index in values where value is found, or -1 """
+
+    if isinstance(values, _STRING_TYPES):
+        try:
+            return values.rfind(value)
+        except TypeError:
+            return values.rfind(type(values)(value, DEFAULT_ENCODING))
+    else:
+        try:
+            return len(values) - 1 - values[::-1].index(value)
+        except (TypeError, ValueError):
+            return -1
+
+
+def rindex(values, value):
+    """ :return: the highest index in values where value is found, else raise ValueError """
+
+    if isinstance(values, _STRING_TYPES):
+        try:
+            return values.rindex(value)
+        except TypeError:
+            return values.rindex(type(values)(value, DEFAULT_ENCODING))
+    return len(values) - 1 - values[::-1].index(value)
 
 
 def reduce_value(value, default=EMPTY_STR):
