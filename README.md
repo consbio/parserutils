@@ -34,11 +34,24 @@ collections.setdefaults({}, {'a.b': 'bbb', 'a.c': 'ccc'})  # {'a': {'b': 'bbb', 
 collections.filter_empty(x for x in (None, [], ['a'], '', {'b'}, 'c'))      # [['a'], {'b'}, 'c']
 collections.flatten_items(x for x in ('abc', ['a', 'b', 'c'], ('d', 'e')))  # ['abc', 'a', 'b', 'c', 'd', 'e']
 
+collections.rindex('aba', 'a')               # 2
+collections.rindex(['a', 'b', 'a'], 'a')     # 2
+collections.rindex(('a', 'b', 'a'), 'a')     # 2
+collections.rindex('xyz', 'a')               # ValueError
+collections.rindex([x for x in 'xyz'], 'a')  # ValueError
+
+collections.rfind('aba', 'a')                # 2
+collections.rfind(['a', 'b', 'a'], 'a')      # 2
+collections.rfind(('a', 'b', 'a'), 'a')      # 2
+collections.rindex('xyz', 'a')               # -1
+collections.rfind([x for x in 'xyz'], 'a')   # -1
+
 collections.reduce_value(['abc'])          # 'abc'
 collections.reduce_value(('abc',))         # 'abc'
 collections.reduce_value({'abc'})          # 'abc'
 collections.reduce_value('abc')            # 'abc'
 collections.reduce_value({'a': 'aaa'})     # {'a': 'aaa'}
+collections.reduce_value([{'a': 'aaa'}])   # {'a': 'aaa'}
 collections.reduce_value(['a', 'b', 'c'])  # ['a', 'b', 'c']
 
 collections.wrap_value(['abc'])           # ['abc']
