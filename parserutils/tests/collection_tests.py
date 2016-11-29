@@ -3,7 +3,9 @@ import unittest
 from copy import deepcopy
 
 from parserutils.collections import accumulate_items, setdefaults
-from parserutils.collections import filter_empty, flatten_items, rfind, rindex, reduce_value, wrap_value
+from parserutils.collections import filter_empty, flatten_items
+from parserutils.collections import remove_duplicates, rfind, rindex, reduce_value, wrap_value
+
 from parserutils.strings import EMPTY_BIN, EMPTY_STR
 
 
@@ -465,6 +467,109 @@ class ListTupleSetTestCase(unittest.TestCase):
 
             self.assertEqual(flatten_items(f for f in flat_to_recurse), list(flat_no_recurse))
             self.assertEqual(flatten_items((f for f in flat_to_recurse), True), list(flat_after_recurse))
+
+    def test_remove_duplicates(self):
+        """ Tests remove_duplicates with general inputs """
+
+        # Test with non-iterable values
+        self.assertEqual(remove_duplicates(None), None)
+        self.assertEqual(remove_duplicates(EMPTY_BIN), EMPTY_BIN)
+        self.assertEqual(remove_duplicates(EMPTY_STR), EMPTY_STR)
+        self.assertEqual(remove_duplicates(0), 0)
+        self.assertEqual(remove_duplicates(1), 1)
+        self.assertEqual(remove_duplicates(False), False)
+        self.assertEqual(remove_duplicates(True), True)
+        self.assertEqual(remove_duplicates([]), [])
+        self.assertEqual(remove_duplicates({}), {})
+        self.assertEqual(remove_duplicates(tuple()), tuple())
+        self.assertEqual(remove_duplicates(set()), set())
+
+        # Test with iterable values with nothing to remove
+        self.assertEqual(remove_duplicates('abc'), 'abc')
+        self.assertEqual(remove_duplicates(b'abc'), b'abc')
+        self.assertEqual(remove_duplicates(['a', 'b', 'c']), ['a', 'b', 'c'])
+        self.assertEqual(remove_duplicates(('a', 'b', 'c')), ('a', 'b', 'c'))
+        self.assertEqual(remove_duplicates({'a', 'b', 'c'}), {'a', 'b', 'c'})
+        self.assertEqual(remove_duplicates(x for x in 'abc'), ['a', 'b', 'c'])
+        self.assertEqual(remove_duplicates({'a': 'aaa'}), {'a': 'aaa'})
+        self.assertEqual(remove_duplicates({'b': 'bbb', 'c': 'ccc'}), {'b': 'bbb', 'c': 'ccc'})
+        self.assertEqual(remove_duplicates([('a',), ('b', 'c')]), [('a',), ('b', 'c')])
+
+        # Test with iterable unhashable values with nothing to remove
+        self.assertEqual(remove_duplicates([{'a', 'b', 'c'}], is_unhashable=True), [{'a', 'b', 'c'}])
+        self.assertEqual(remove_duplicates([{'a': 'bc'}, {'d': 'ef'}], is_unhashable=True), [{'a': 'bc'}, {'d': 'ef'}])
+
+        # Test that unexpected unhashable values raise TypeError
+
+        with self.assertRaises(TypeError):
+            remove_duplicates([{'a', 'b', 'c'}], is_unhashable=False)
+        with self.assertRaises(TypeError):
+            remove_duplicates([{'a': 'bc'}, {'d': 'ef'}], is_unhashable=False)
+
+        # Test with iterable values with duplicates to remove
+
+        str_test = u'abcabcdefdefghiabcdef'
+        self.assertEqual(remove_duplicates(str_test), u'abcdefghi')
+        self.assertEqual(remove_duplicates(str_test, in_reverse=True), u'ghiabcdef')
+
+        bin_test = b'abcabcdefdefghiabcdef'
+        self.assertEqual(remove_duplicates(bin_test), b'abcdefghi')
+        self.assertEqual(remove_duplicates(bin_test, in_reverse=True), b'ghiabcdef')
+
+        list_test = [x for x in 'abcabcdefdefghiabcdef']
+        self.assertEqual(remove_duplicates(list_test), ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'])
+        self.assertEqual(remove_duplicates(list_test, in_reverse=True), ['g', 'h', 'i', 'a', 'b', 'c', 'd', 'e', 'f'])
+
+        tuple_test = tuple(x for x in 'abcabcdefdefghiabcdef')
+        self.assertEqual(remove_duplicates(tuple_test), ('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'))
+        self.assertEqual(remove_duplicates(tuple_test, in_reverse=True), ('g', 'h', 'i', 'a', 'b', 'c', 'd', 'e', 'f'))
+
+        gen_test = (x for x in 'abcabcdefdefghiabcdef')
+        self.assertEqual(remove_duplicates(x for x in gen_test), ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'])
+        gen_test = (x for x in 'abcabcdefdefghiabcdef')
+        self.assertEqual(remove_duplicates(gen_test, in_reverse=True), ['g', 'h', 'i', 'a', 'b', 'c', 'd', 'e', 'f'])
+
+        # Test with iterable values with all unhashable duplicates to remove
+
+        list_test = [set(x) for x in 'abcdefabc']
+        self.assertEqual(remove_duplicates(list_test, is_unhashable=True), [{'a'}, {'b'}, {'c'}, {'d'}, {'e'}, {'f'}])
+        self.assertEqual(
+            remove_duplicates(list_test, in_reverse=True, is_unhashable=True),
+            [{'d'}, {'e'}, {'f'}, {'a'}, {'b'}, {'c'}]
+        )
+
+        tuple_test = tuple(set(x) for x in 'abcdefabc')
+        self.assertEqual(remove_duplicates(tuple_test, is_unhashable=True), ({'a'}, {'b'}, {'c'}, {'d'}, {'e'}, {'f'}))
+        self.assertEqual(
+            remove_duplicates(tuple_test, in_reverse=True, is_unhashable=True),
+            ({'d'}, {'e'}, {'f'}, {'a'}, {'b'}, {'c'})
+        )
+
+        gen_test = (set(x) for x in 'abcdefabc')
+        self.assertEqual(
+            remove_duplicates((x for x in gen_test), is_unhashable=True),
+            [{'a'}, {'b'}, {'c'}, {'d'}, {'e'}, {'f'}]
+        )
+        gen_test = (set(x) for x in 'abcdefabc')
+        self.assertEqual(
+            remove_duplicates(gen_test, in_reverse=True, is_unhashable=True),
+            [{'d'}, {'e'}, {'f'}, {'a'}, {'b'}, {'c'}]
+        )
+
+        # Test with iterable values with some unhashable duplicates to remove
+
+        list_test = [{'a'}, 'b', {'c'}, 'b', {'a'}]
+        self.assertEqual(remove_duplicates(list_test, is_unhashable=True), [{'a'}, 'b', {'c'}])
+        self.assertEqual(remove_duplicates(list_test, in_reverse=True, is_unhashable=True), [{'c'}, 'b', {'a'}])
+
+        tuple_test = ({'a'}, 'b', {'c'}, 'b', {'a'})
+        self.assertEqual(remove_duplicates(tuple_test, is_unhashable=True), ({'a'}, 'b', {'c'}))
+        self.assertEqual(remove_duplicates(tuple_test, in_reverse=True, is_unhashable=True), ({'c'}, 'b', {'a'}))
+
+        gen_test = (x for x in ({'a'}, 'b', {'c'}, 'b', {'a'}))
+        self.assertEqual(remove_duplicates(gen_test, is_unhashable=True), [{'a'}, 'b', {'c'}])
+        gen_test = (x for x in ({'a'}, 'b', {'c'}, 'b', {'a'}))
+        self.assertEqual(remove_duplicates(gen_test, in_reverse=True, is_unhashable=True), [{'c'}, 'b', {'a'}])
 
     def test_rfind(self):
         """ Tests rfind with general inputs """

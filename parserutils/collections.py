@@ -1,8 +1,8 @@
 from _collections import defaultdict
 
-from six import iteritems
+from six import iteritems, string_types
 
-from parserutils.strings import DEFAULT_ENCODING, EMPTY_STR, _STRING_TYPES
+from parserutils.strings import DEFAULT_ENCODING, EMPTY_BIN, EMPTY_STR, _STRING_TYPES
 
 
 # DICT FUNCTIONS #
@@ -150,6 +150,48 @@ _flatten_types = (tuple, set)
 _flattened_types = (dict,) + _STRING_TYPES
 
 
+def remove_duplicates(items, in_reverse=False, is_unhashable=False):
+    """
+    With maximum performance, iterate over items and return unique ordered values.
+    :param items: an iterable of values: lists, tuples, strings, or generator
+    :param in_reverse: if True, iterate backwards to remove initial duplicates (less performant)
+    :param is_unhashable: if False, use a set to track duplicates; otherwise a list (less performant)
+    :return: a unique ordered list, tuple or string depending on the type of items
+    """
+
+    if not items:
+        return items
+    elif isinstance(items, _removed_dup_types):
+        return items
+    elif not hasattr(items, '__iter__') and not hasattr(items, '__getitem__'):
+        return items
+
+    _items = items
+    if in_reverse:
+        subscriptable = hasattr(items, '__getitem__')
+        _items = items[::-1] if subscriptable else reversed([i for i in items])
+
+    is_unhashable &= not isinstance(items, _STRING_TYPES)
+    buffer = list() if is_unhashable else set()
+    append = buffer.append if is_unhashable else buffer.add
+
+    if not isinstance(items, _remove_dup_types):
+        # The fastest case: handles lists (33% of other cases) and generators (25%)
+        unique = [i for i in _items if i not in buffer and not append(i)]
+    elif isinstance(items, tuple):
+        unique = tuple(i for i in _items if i not in buffer and not append(i))
+    elif isinstance(items, string_types):
+        unique = EMPTY_STR.join(i for i in _items if i not in buffer and not append(i))
+    else:
+        # Python 3 compliance: for bytearrays, convert integers back to bytes during iteration
+        unique = EMPTY_BIN.join(bytes([i]) for i in _items if i not in buffer and not append(i))
+
+    return unique if not in_reverse else unique[::-1]  # Restore original order
+
+_remove_dup_types = (tuple,) + _STRING_TYPES
+_removed_dup_types = (dict, set)
+
+
 def rfind(values, value):
     """ :return: the highest index in values where value is found, or -1 """
 
@@ -157,6 +199,7 @@ def rfind(values, value):
         try:
             return values.rfind(value)
         except TypeError:
+            # Python 3 compliance: search for str values in bytearray
             return values.rfind(type(values)(value, DEFAULT_ENCODING))
     else:
         try:
@@ -172,13 +215,16 @@ def rindex(values, value):
         try:
             return values.rindex(value)
         except TypeError:
+            # Python 3 compliance: search for str values in bytearray
             return values.rindex(type(values)(value, DEFAULT_ENCODING))
-    return len(values) - 1 - values[::-1].index(value)
+    else:
+        return len(values) - 1 - values[::-1].index(value)
 
 
 def reduce_value(value, default=EMPTY_STR):
     """
-    :return: the item from lists, tuples or sets with one item, the value itself if not empty, otherwise the default
+    :return: a single value from lists, tuples or sets with one item;
+    otherwise, the value itself if not empty or the default if it is.
     """
 
     if hasattr(value, '__len__'):
@@ -199,8 +245,8 @@ _reduce_types = (list, tuple)
 
 def wrap_value(value, include_empty=False):
     """
-    :return: the value wrapped in a list unless it is already iterable (and not a dict)
-    If so, empty values will be filtered out by default, and an empty list is returned.
+    :return: the value wrapped in a list unless it is already iterable (and not a dict);
+    if so, empty values will be filtered out by default, and an empty list is returned.
     """
 
     if value is None:

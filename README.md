@@ -34,6 +34,14 @@ collections.setdefaults({}, {'a.b': 'bbb', 'a.c': 'ccc'})  # {'a': {'b': 'bbb', 
 collections.filter_empty(x for x in (None, [], ['a'], '', {'b'}, 'c'))      # [['a'], {'b'}, 'c']
 collections.flatten_items(x for x in ('abc', ['a', 'b', 'c'], ('d', 'e')))  # ['abc', 'a', 'b', 'c', 'd', 'e']
 
+collections.remove_duplicates('abcdefabc')                                 # 'abcdef'
+collections.remove_duplicates('abcdefabc', in_reverse=True)                # 'defabc'
+collections.remove_duplicates(['a', 'b', 'c', 'a'])                        # ['a', 'b', 'c']
+collections.remove_duplicates(('a', 'b', 'c', 'a'), in_reverse=True)       # ('b', 'c', 'a')
+collections.remove_duplicates(x for x in 'abca')                           # ['a', 'b', 'c']
+collections.remove_duplicates((x for x in 'abca'), in_reverse=True)        # ['b', 'c', 'a']
+collections.remove_duplicates((set(x) for x in 'abca'), is_hashable=True)  # [{'a'}, {'b'}, {'c'}]
+
 collections.rindex('aba', 'a')               # 2
 collections.rindex(['a', 'b', 'a'], 'a')     # 2
 collections.rindex(('a', 'b', 'a'), 'a')     # 2
