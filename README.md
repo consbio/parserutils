@@ -113,6 +113,11 @@ strings.snake_to_camel('from_snake')              # fromSnake
 strings.snake_to_camel('_leading_and_trailing_')  # leadingAndTrailing
 strings.snake_to_camel('extra___underscores')     # extraUnderscores
 
+strings.splitany('ab:ca:bc', ',')      # Same as 'ab:ca:bc'.split(':')
+strings.splitany('ab:ca:bc', ',', 1)   # Same as 'ab:ca:bc'.split(':', 1)
+strings.splitany('ab|ca:bc', '|:')     # ['ab', 'ca', 'bc']
+strings.splitany('ab|ca:bc', ':|', 1)  # ['ab', 'ca:bc']
+
 strings.to_ascii_equivalent('smart quotes, etc.')  # Replaces with ascii quotes, etc.
 
 # URL manipulation leverages urllib, but spares you the extra code

@@ -13,7 +13,7 @@ from defusedxml.cElementTree import fromstring, tostring
 from defusedxml.cElementTree import iterparse
 from xml.etree.cElementTree import ElementTree, Element
 from xml.etree.cElementTree import iselement
-from parserutils.strings import DEFAULT_ENCODING, _STRING_TYPES
+from parserutils.strings import DEFAULT_ENCODING, STRING_TYPES
 
 ElementType = type(Element(None))  # Element module doesn't have a type
 
@@ -169,7 +169,7 @@ def get_element(parent_to_parse, element_path=None):
     elif hasattr(parent_to_parse, 'read'):
         parent_to_parse = string_to_element(parent_to_parse.read())
 
-    elif isinstance(parent_to_parse, _STRING_TYPES):
+    elif isinstance(parent_to_parse, STRING_TYPES):
         parent_to_parse = string_to_element(parent_to_parse)
 
     elif isinstance(parent_to_parse, dict):
@@ -797,7 +797,7 @@ def element_to_object(elem_to_parse, element_path=None):
     }}
     """
 
-    if isinstance(elem_to_parse, _STRING_TYPES) or hasattr(elem_to_parse, 'read'):
+    if isinstance(elem_to_parse, STRING_TYPES) or hasattr(elem_to_parse, 'read'):
         # Always strip namespaces if not already parsed
         elem_to_parse = strip_namespaces(elem_to_parse)
 

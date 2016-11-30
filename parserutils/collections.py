@@ -2,7 +2,7 @@ from _collections import defaultdict
 
 from six import iteritems, string_types
 
-from parserutils.strings import DEFAULT_ENCODING, EMPTY_BIN, EMPTY_STR, _STRING_TYPES
+from parserutils.strings import DEFAULT_ENCODING, EMPTY_BIN, EMPTY_STR, STRING_TYPES
 
 
 # DICT FUNCTIONS #
@@ -70,7 +70,7 @@ def setdefaults(d, defaults):
                 k, s = current.split('.', 1)
                 d.setdefault(k, {})
                 setdefaults(d[k], [{s: next_up}])
-            elif isinstance(next_up, _STRING_TYPES):
+            elif isinstance(next_up, STRING_TYPES):
                 # Set a string value directly
                 d.setdefault(current, next_up)
             else:
@@ -83,14 +83,14 @@ def setdefaults(d, defaults):
 def _to_key_val_pairs(defs):
     """ Helper to split strings, lists and dicts into (current, value) tuples for accumulation """
 
-    if isinstance(defs, _STRING_TYPES):
+    if isinstance(defs, STRING_TYPES):
         # Convert 'a' to [('a', None)], or 'a.b.c' to [('a', 'b.c')]
         return [defs.split('.', 1) if '.' in defs else (defs, None)]
     else:
         pairs = []
 
         # Convert collections of strings or lists as above; break dicts into component items
-        pairs.extend(p for s in defs if isinstance(s, _STRING_TYPES) for p in _to_key_val_pairs(s))
+        pairs.extend(p for s in defs if isinstance(s, STRING_TYPES) for p in _to_key_val_pairs(s))
         pairs.extend(p for l in defs if isinstance(l, list) for p in _to_key_val_pairs(l))
         pairs.extend(p for d in defs if isinstance(d, dict) for p in iteritems(d))
 
@@ -120,7 +120,7 @@ def filter_empty(values, default=None):
     return values
 
 _filter_types = (list, tuple, set)
-_filtered_types = (dict,) + _STRING_TYPES
+_filtered_types = (dict,) + STRING_TYPES
 
 
 def flatten_items(items, recurse=False):
@@ -147,7 +147,7 @@ def flatten_items(items, recurse=False):
     return type(items)(flattened) if isinstance(items, _flatten_types) else flattened
 
 _flatten_types = (tuple, set)
-_flattened_types = (dict,) + _STRING_TYPES
+_flattened_types = (dict,) + STRING_TYPES
 
 
 def remove_duplicates(items, in_reverse=False, is_unhashable=False):
@@ -171,7 +171,7 @@ def remove_duplicates(items, in_reverse=False, is_unhashable=False):
         subscriptable = hasattr(items, '__getitem__')
         _items = items[::-1] if subscriptable else reversed([i for i in items])
 
-    is_unhashable &= not isinstance(items, _STRING_TYPES)
+    is_unhashable &= not isinstance(items, STRING_TYPES)
     buffer = list() if is_unhashable else set()
     append = buffer.append if is_unhashable else buffer.add
 
@@ -188,14 +188,14 @@ def remove_duplicates(items, in_reverse=False, is_unhashable=False):
 
     return unique if not in_reverse else unique[::-1]  # Restore original order
 
-_remove_dup_types = (tuple,) + _STRING_TYPES
+_remove_dup_types = (tuple,) + STRING_TYPES
 _removed_dup_types = (dict, set)
 
 
 def rfind(values, value):
     """ :return: the highest index in values where value is found, or -1 """
 
-    if isinstance(values, _STRING_TYPES):
+    if isinstance(values, STRING_TYPES):
         try:
             return values.rfind(value)
         except TypeError:
@@ -211,7 +211,7 @@ def rfind(values, value):
 def rindex(values, value):
     """ :return: the highest index in values where value is found, else raise ValueError """
 
-    if isinstance(values, _STRING_TYPES):
+    if isinstance(values, STRING_TYPES):
         try:
             return values.rindex(value)
         except TypeError:
@@ -260,4 +260,4 @@ def wrap_value(value, include_empty=False):
 
     return value if include_empty else filter_empty(value, [])
 
-_wrap_types = (dict,) + _STRING_TYPES
+_wrap_types = (dict,) + STRING_TYPES

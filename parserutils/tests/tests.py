@@ -2,7 +2,7 @@ from parserutils.tests.collection_tests import DictsTestCase, ListTupleSetTestCa
 from parserutils.tests.date_tests import DateTestCase
 from parserutils.tests.element_tests import XMLCheckTests, XMLInsertRemoveTests, XMLPropertyTests, XMLTests
 from parserutils.tests.number_tests import NumberTestCase
-from parserutils.tests.string_tests import StringCasingTestCase, StringConversionTestCase
+from parserutils.tests.string_tests import StringCasingTestCase, StringConversionTestCase, StringOperationTestCase
 from parserutils.tests.url_tests import URLTestCase
 
 
@@ -22,7 +22,7 @@ class NumbersTestCase(NumberTestCase):
     """ Consolidates all number_tests for ease of execution """
 
 
-class StringsTestCase(StringCasingTestCase, StringConversionTestCase):
+class StringsTestCase(StringCasingTestCase, StringConversionTestCase, StringOperationTestCase):
     """ Consolidates all string_tests for ease of execution """
 
 

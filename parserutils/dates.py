@@ -3,9 +3,7 @@ import datetime
 from dateutil import parser
 
 from parserutils.numbers import is_number
-from parserutils.strings import _STRING_TYPES
-
-_DATE_TYPES = (datetime.date, datetime.datetime)
+from parserutils.strings import STRING_TYPES
 
 
 def parse_dates(d, default='today'):
@@ -17,7 +15,7 @@ def parse_dates(d, default='today'):
     if d is None:
         return default
 
-    elif isinstance(d, _DATE_TYPES):
+    elif isinstance(d, _parsed_date_types):
         return d
 
     elif is_number(d):
@@ -25,7 +23,7 @@ def parse_dates(d, default='today'):
         d = d if isinstance(d, float) else float(d)
         return datetime.datetime.utcfromtimestamp(d)
 
-    elif not isinstance(d, _STRING_TYPES):
+    elif not isinstance(d, STRING_TYPES):
         if hasattr(d, '__iter__'):
             return [parse_dates(s, default) for s in d]
         else:
@@ -40,3 +38,6 @@ def parse_dates(d, default='today'):
             return parser.parse(d)
         except (AttributeError, ValueError):
             return default
+
+_parsed_date_types = (datetime.date, datetime.datetime)
+
