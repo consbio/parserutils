@@ -17,8 +17,8 @@ EMPTY_BIN = six.binary_type()
 EMPTY_STR = six.text_type()
 
 # Reduce types to minimum possible (in Python 2 there are duplicates)
-STRING_TYPES = tuple(t for t in {six.binary_type, six.string_types[0]})
-
+STRING_TYPE = six.string_types[0]
+STRING_TYPES = tuple(t for t in {six.binary_type, STRING_TYPE})
 
 _TO_SNAKE_REGEX_1 = re.compile(r'(.)([A-Z][a-z]+)')
 _TO_SNAKE_REGEX_2 = re.compile(r'([a-z0-9])([A-Z])')
@@ -66,25 +66,57 @@ def _underscored_to_camel(s):
     return _TO_CAMEL_REGEX.sub(lambda match: match.group(1).upper(), s.strip('_').lower())
 
 
-def splitany(s, sep, maxsplit=-1):
+def splitany(s, sep=None, maxsplit=-1):
+    """
+    Splits "s" into substrings using "sep" as the delimiter string. Behaves like str.split, except that:
+
+    1. Single strings are parsed into characters, any of which may be used as a delimiter
+    2. Lists or tuples of multiple character strings may be provided, and thus used as delimiters
+
+    If "sep" is None, a single character, or a list with one string, str.split is called directly.
+    Otherwise, "s" is parsed iteratively until all delimiters have been found, or maxsplit has been reached.
+
+    :param s: the unicode or binary string to split
+    :param sep: a string or list of strings to use as delimiter in the split (defaults to whitespace):
+        if a string, split on any char; if a list or tuple, split on any of its values
+    :param maxsplit: if provided, the maximum number of splits to perform
+
+    :return: the list of substrings in "s" between occurrences of "sep"
+    """
 
     if s is None:
         return []
     elif not isinstance(s, STRING_TYPES):
         raise TypeError('Cannot split a {t}: {s}'.format(s=s, t=type(s).__name__))
-    elif not isinstance(sep, STRING_TYPES):
-        raise TypeError('Cannot split on a {t}: {s}'.format(s=sep, t=type(sep).__name__))
-
-    if not isinstance(s, type(sep)):
-        # Python 3 compliance: ensure "s" and "sep" are either both unicode or both binary
-        transform = sep.decode if isinstance(sep, binary_type) else sep.encode
-        sep = transform(DEFAULT_ENCODING)
-
-    if len(s) == 0 or len(sep) == 0 or maxsplit == 0:
-        return [s]
-    elif len(sep) == 1:
+    elif sep is None:
         return s.split(sep, maxsplit)
+    elif not isinstance(sep, _split_sep_types):
+        raise TypeError('Cannot split on a {t}: {s}'.format(s=sep, t=type(sep).__name__))
+    else:
+        split_on_any_char = isinstance(sep, STRING_TYPES)
 
+        if split_on_any_char:
+            # Python 3 compliance: sync and wrap to prevent issues with Binary: b'a'[0] == 97
+            seps = [_sync_string_to(s, sep)]
+        elif all(isinstance(sub, STRING_TYPES) for sub in sep):
+            # Python 3 compliance: sync, but also sort keys by length to do largest matches first
+            seps = [_sync_string_to(s, sub) for sub in sep]
+        else:
+            invalid_seps = [sub for sub in sep if not isinstance(sep, STRING_TYPES)]
+            raise TypeError('Cannot split on the following: {s}'.format(s=invalid_seps))
+
+    if len(s) == 0 or len(seps) == 0 or maxsplit == 0:
+        return [s]
+    elif len(seps) == 1:
+        # Reduce to single char or list item
+        # Call split if sep like: 'a', ['a'], ['ab']
+        # Otherwise, split on any if sep like: 'ab'
+
+        seps = seps[0]
+        if not split_on_any_char or len(seps) == 1:
+            return s.split(seps, maxsplit)
+
+    as_text = isinstance(seps, _split_txt_types)
     parts = []
     start = 0
     rest = None
@@ -92,17 +124,35 @@ def splitany(s, sep, maxsplit=-1):
     try:
         while maxsplit < 0 or maxsplit >= len(parts):
             rest = s if start == 0 else rest[start:]
-            stop = min(rest.index(sub) for sub in sep if sub in rest)
 
-            parts.append(rest if maxsplit == len(parts) else rest[:stop])
-            start = stop + 1  # Skip index of last delim
+            # Sort based on (index_in_sep, negative_len_of_sep) to do largest matches first
+            if as_text:
+                stop = min((rest.index(sub), 0 - len(sub)) for sub in seps if sub in rest)
+            else:
+                # Python 3 compliance: iterating over bytes results in ints
+                stop = min((rest.index(sub), 0 - len(bytes([sub]))) for sub in seps if sub in rest)
+
+            parts.append(rest if maxsplit == len(parts) else rest[:stop[0]])
+            start = stop[0] - stop[1]  # Skip full index of last delim
 
     except ValueError:
         parts.append(rest)
 
     return parts
 
-_split_sep_types = STRING_TYPES
+_split_sep_types = STRING_TYPES + (list, tuple)
+_split_txt_types = (STRING_TYPE, list, tuple)
+
+
+def _sync_string_to(bin_or_str, string):
+    """ Python 3 compliance: ensure two strings are the same type (unicode or binary) """
+
+    if isinstance(string, type(bin_or_str)):
+        return string
+    elif isinstance(string, binary_type):
+        return string.decode(DEFAULT_ENCODING)
+    else:
+        return string.encode(DEFAULT_ENCODING)
 
 
 def to_ascii_equivalent(text):

@@ -170,77 +170,176 @@ class StringOperationTestCase(unittest.TestCase):
         self.assertEqual(splitany(EMPTY_STR, EMPTY_BIN), [EMPTY_STR])
         self.assertEqual(splitany(EMPTY_STR, EMPTY_STR), [EMPTY_STR])
 
-        # Test invalid inputs
+        # Test invalid strings to split
 
-        with self.assertRaises(TypeError):
-            splitany([], u'')
-        with self.assertRaises(TypeError):
-            splitany([], b'')
-        with self.assertRaises(TypeError):
-            splitany(u'', None)
-        with self.assertRaises(TypeError):
-            splitany(b'', None)
+        for invalid in ({}, set(), (x for x in 'abc')):
+            with self.assertRaises(TypeError):
+                splitany(invalid, u'')
+            with self.assertRaises(TypeError):
+                splitany(invalid, b'')
+
+        # Test invalid separators to split on
+
+        for invalid in ({}, set(), [u'', b'', {}], (u'', b'', set())):
+            with self.assertRaises(TypeError):
+                splitany(u'', invalid)
+            with self.assertRaises(TypeError):
+                splitany(b'', invalid)
 
         # Test single inputs
+
+        # No matches with unicode and binary combinations
+        self.assertEqual(splitany(u'abc'), u'abc'.split())
+        self.assertEqual(splitany(b'abc'), b'abc'.split())
 
         self.assertEqual(splitany(u'abc', u'x'), u'abc'.split(u'x'))
         self.assertEqual(splitany(b'abc', u'x'), b'abc'.split(b'x'))
         self.assertEqual(splitany(u'abc', b'x'), u'abc'.split(u'x'))
         self.assertEqual(splitany(b'abc', b'x'), b'abc'.split(b'x'))
 
+        # One initial match with unicode and binary combinations
+        self.assertEqual(splitany(u' abc'), u' abc'.split())
+        self.assertEqual(splitany(b' abc'), b' abc'.split())
+
         self.assertEqual(splitany(u'xyz', u'x'), u'xyz'.split(u'x'))
         self.assertEqual(splitany(b'xyz', u'x'), b'xyz'.split(b'x'))
         self.assertEqual(splitany(u'xyz', b'x'), u'xyz'.split(u'x'))
         self.assertEqual(splitany(b'xyz', b'x'), b'xyz'.split(b'x'))
-        self.assertEqual(splitany(u'xyz', 'x', 0), u'xyz'.split(u'x', 0))
-        self.assertEqual(splitany(u'xyz', 'x', 1), u'xyz'.split(u'x', 1))
+        self.assertEqual(splitany(u'xyz', b'x', 0), u'xyz'.split(u'x', 0))
+        self.assertEqual(splitany(b'xyz', u'x', 1), b'xyz'.split(b'x', 1))
+        self.assertEqual(splitany(u'xyz', u'x', 2), u'xyz'.split(u'x', 2))
+        self.assertEqual(splitany(b'xyz', b'x', 3), b'xyz'.split(b'x', 3))
 
-        self.assertEqual(splitany(u'xyzxyz', 'y'), u'xyzxyz'.split(u'y'))
-        self.assertEqual(splitany(b'xyzxyz', 'y'), b'xyzxyz'.split(b'y'))
+        # One complete match with unicode and binary combinations
+        self.assertEqual(splitany(u' '), u' '.split())
+        self.assertEqual(splitany(b' '), b' '.split())
+
+        self.assertEqual(splitany(u'xyz', [u'xyz']), u'xyz'.split(u'xyz'))
+        self.assertEqual(splitany(b'xyz', [u'xyz']), b'xyz'.split(b'xyz'))
+        self.assertEqual(splitany(u'xyz', [b'xyz']), u'xyz'.split(u'xyz'))
+        self.assertEqual(splitany(b'xyz', [b'xyz']), b'xyz'.split(b'xyz'))
+        self.assertEqual(splitany(u'xyz', [b'xyz'], 0), u'xyz'.split(u'xyz', 0))
+        self.assertEqual(splitany(b'xyz', [u'xyz'], 1), b'xyz'.split(b'xyz', 1))
+        self.assertEqual(splitany(u'xyz', [u'xyz'], 2), u'xyz'.split(u'xyz', 2))
+        self.assertEqual(splitany(b'xyz', [b'xyz'], 3), b'xyz'.split(b'xyz', 3))
+
+        # Two internal matches with unicode and binary combinations
+        self.assertEqual(splitany(u'abc def ghi'), u'abc def ghi'.split())
+        self.assertEqual(splitany(b'abc def ghi'), b'abc def ghi'.split())
+
+        self.assertEqual(splitany(u'xyzxyz', u'y'), u'xyzxyz'.split(u'y'))
+        self.assertEqual(splitany(b'xyzxyz', u'y'), b'xyzxyz'.split(b'y'))
         self.assertEqual(splitany(u'xyzxyz', b'y'), u'xyzxyz'.split(u'y'))
         self.assertEqual(splitany(b'xyzxyz', b'y'), b'xyzxyz'.split(b'y'))
-        self.assertEqual(splitany(u'xyzxyz', 'y', 0), u'xyzxyz'.split(u'y', 0))
-        self.assertEqual(splitany(u'xyzxyz', 'y', 1), u'xyzxyz'.split(u'y', 1))
-        self.assertEqual(splitany(u'xyzxyz', 'y', 2), u'xyzxyz'.split(u'y', 2))
+        self.assertEqual(splitany(u'xyzxyz', b'y', 0), u'xyzxyz'.split(u'y', 0))
+        self.assertEqual(splitany(b'xyzxyz', u'y', 1), b'xyzxyz'.split(b'y', 1))
+        self.assertEqual(splitany(u'xyzxyz', u'y', 2), u'xyzxyz'.split(u'y', 2))
+        self.assertEqual(splitany(b'xyzxyz', b'y', 3), b'xyzxyz'.split(b'y', 3))
+
+        # Two internal multi-char matches with unicode and binary combinations
+        self.assertEqual(splitany(u'abc\n\tdef'), u'abc\n\tdef'.split())
+        self.assertEqual(splitany(b'abc\n\tdef'), b'abc\n\tdef'.split())
+
+        self.assertEqual(splitany(u'xyzxyz', [u'yz']), u'xyzxyz'.split(u'yz'))
+        self.assertEqual(splitany(b'xyzxyz', [u'yz']), b'xyzxyz'.split(b'yz'))
+        self.assertEqual(splitany(u'xyzxyz', [b'yz']), u'xyzxyz'.split(u'yz'))
+        self.assertEqual(splitany(b'xyzxyz', [b'yz']), b'xyzxyz'.split(b'yz'))
+        self.assertEqual(splitany(u'xyzxyz', [b'yz'], 0), u'xyzxyz'.split(u'yz', 0))
+        self.assertEqual(splitany(b'xyzxyz', [u'yz'], 1), b'xyzxyz'.split(b'yz', 1))
+        self.assertEqual(splitany(u'xyzxyz', [u'yz'], 2), u'xyzxyz'.split(u'yz', 2))
+        self.assertEqual(splitany(b'xyzxyz', [b'yz'], 3), b'xyzxyz'.split(b'yz', 3))
+
+        # Three internal and trailing matches with unicode and binary combinations
+        self.assertEqual(splitany(u'abc def\tdef\n'), u'abc def\tdef\n'.split())
+        self.assertEqual(splitany(b'abc def\tdef\n'), b'abc def\tdef\n'.split())
 
         self.assertEqual(splitany(u'xyzxyzxyz', u'z'), u'xyzxyzxyz'.split(u'z'))
         self.assertEqual(splitany(b'xyzxyzxyz', u'z'), b'xyzxyzxyz'.split(b'z'))
         self.assertEqual(splitany(u'xyzxyzxyz', b'z'), u'xyzxyzxyz'.split(u'z'))
         self.assertEqual(splitany(b'xyzxyzxyz', b'z'), b'xyzxyzxyz'.split(b'z'))
-        self.assertEqual(splitany(u'xyzxyzxyz', u'z', 0), u'xyzxyzxyz'.split(u'z', 0))
-        self.assertEqual(splitany(u'xyzxyzxyz', u'z', 1), u'xyzxyzxyz'.split(u'z', 1))
-        self.assertEqual(splitany(u'xyzxyzxyz', u'z', 2), u'xyzxyzxyz'.split(u'z', 2))
-        self.assertEqual(splitany(u'xyzxyzxyz', u'z', 3), u'xyzxyzxyz'.split(u'z', 3))
+        self.assertEqual(splitany(u'xyzxyzxyz', b'z', 0), u'xyzxyzxyz'.split(u'z', 0))
+        self.assertEqual(splitany(b'xyzxyzxyz', u'z', 1), b'xyzxyzxyz'.split(b'z', 1))
+        self.assertEqual(splitany(u'xyzxyzxyz', b'z', 2), u'xyzxyzxyz'.split(u'z', 2))
+        self.assertEqual(splitany(b'xyzxyzxyz', b'z', 3), b'xyzxyzxyz'.split(b'z', 3))
         self.assertEqual(splitany(u'xyzxyzxyz', u'z', 4), u'xyzxyzxyz'.split(u'z', 4))
+
+        # Three internal and trailing multi-char matches with unicode and binary combinations
+        self.assertEqual(splitany(u'abc\t\tdef  def\n\n'), u'abc\t\tdef  def\n\n'.split())
+        self.assertEqual(splitany(b'abc\t\tdef  def\n\n'), b'abc\t\tdef  def\n\n'.split())
+
+        self.assertEqual(splitany(u'xyzxyzxyz', [u'yz']), u'xyzxyzxyz'.split(u'yz'))
+        self.assertEqual(splitany(b'xyzxyzxyz', [u'yz']), b'xyzxyzxyz'.split(b'yz'))
+        self.assertEqual(splitany(u'xyzxyzxyz', [b'yz']), u'xyzxyzxyz'.split(u'yz'))
+        self.assertEqual(splitany(b'xyzxyzxyz', [b'yz']), b'xyzxyzxyz'.split(b'yz'))
+        self.assertEqual(splitany(u'xyzxyzxyz', [b'yz'], 0), u'xyzxyzxyz'.split(u'yz', 0))
+        self.assertEqual(splitany(b'xyzxyzxyz', [u'yz'], 1), b'xyzxyzxyz'.split(b'yz', 1))
+        self.assertEqual(splitany(u'xyzxyzxyz', [b'yz'], 2), u'xyzxyzxyz'.split(u'yz', 2))
+        self.assertEqual(splitany(b'xyzxyzxyz', [b'yz'], 3), b'xyzxyzxyz'.split(b'yz', 3))
+        self.assertEqual(splitany(u'xyzxyzxyz', [u'yz'], 4), u'xyzxyzxyz'.split(u'yz', 4))
 
         # Test multiple inputs expecting unicode
 
-        split_mult = u'xyahckghimghn'
-        split_once = u'xyazczzzimzzn'
+        split_mult = u'abc:d:;|w:xy;|z'
+        split_once = u'abc,d,,,w,xy,,z'
 
-        self.assertEqual(splitany(split_mult, u'gkh'), split_once.split(u'z'))
-        self.assertEqual(splitany(split_mult, b'gkh'), split_once.split(u'z'))
+        # Test unicode without maxsplit option to ensure equivalence to str.split
+        self.assertEqual(splitany(split_mult, u';|:'), split_once.split(u','))
+        self.assertEqual(splitany(split_mult, b';|:'), split_once.split(u','))
+        self.assertEqual(splitany(split_mult, [x for x in u';|:']), split_once.split(u','))
+        self.assertEqual(splitany(split_mult, [b';', b'|', b':']), split_once.split(u','))
+        self.assertEqual(splitany(split_mult, [b'|', u':', b';']), split_once.split(u','))
 
-        for i in range(6):
-            target = [
-                s.replace(u'zzz', u'kgh').replace(u'zz', u'gh').replace(u'z', u'h')
-                for s in split_once.split(u'z', i)
-            ]
-            self.assertEqual(splitany(split_mult, u'gkh', i), target)
-            self.assertEqual(splitany(split_mult, b'gkh', i), target)
+        for i in range(7):
+            target = split_once.split(u',', i)
+
+            # Test unicode with maxsplit option to ensure equivalence to str.split
+            for sep in (u';|:', b';|:', [x for x in u';|:'], [b';', b'|', b':'], [b'|', u':', b';']):
+                source = splitany(split_mult, sep, i)
+                length = len(source[i])
+                index = split_mult.index(source[i])
+
+                self.assertEqual(source[:i], target[:i])         # Parsed portions are equal
+                self.assertEqual(length, len(target[i]))         # Remaining portions equal in length
+                self.assertEqual(source[i], split_mult[index:])  # Remaining portion exists in original
 
         # Test multiple inputs expecting binary
 
-        split_mult = b'xyahckghimghn'
-        split_once = b'xyazczzzimzzn'
+        split_mult = b'abc:d:;|w:xy;|z'
+        split_once = b'abc,d,,,w,xy,,z'
 
-        self.assertEqual(splitany(split_mult, u'gkh'), split_once.split(b'z'))
-        self.assertEqual(splitany(split_mult, b'gkh'), split_once.split(b'z'))
+        # Test binary without maxsplit option to ensure equivalence to str.split
+        self.assertEqual(splitany(split_mult, u';|:'), split_once.split(b','))
+        self.assertEqual(splitany(split_mult, b';|:'), split_once.split(b','))
+        self.assertEqual(splitany(split_mult, [x for x in u';|:']), split_once.split(b','))
+        self.assertEqual(splitany(split_mult, [b';', b'|', b':']), split_once.split(b','))
+        self.assertEqual(splitany(split_mult, [b'|', u':', b';']), split_once.split(b','))
 
-        for i in range(6):
-            target = [
-                s.replace(b'zzz', b'kgh').replace(b'zz', b'gh').replace(b'z', b'h')
-                for s in split_once.split(b'z', i)
-            ]
-            self.assertEqual(splitany(split_mult, u'gkh', i), target)
-            self.assertEqual(splitany(split_mult, b'gkh', i), target)
+        for i in range(7):
+            target = split_once.split(b',', i)
+
+            # Test binary with maxsplit option to ensure equivalence to str.split
+            for sep in (u';|:', b';|:', [x for x in u';|:'], [b';', b'|', b':'], [b'|', u':', b';']):
+                source = splitany(split_mult, sep, i)
+                length = len(source[i])
+                index = split_mult.index(source[i])
+
+                self.assertEqual(source[:i], target[:i])         # Parsed portions are equal
+                self.assertEqual(length, len(target[i]))         # Remaining portions equal in length
+                self.assertEqual(source[i], split_mult[index:])  # Remaining portion exists in original
+
+        # Test multiple character inputs with overlapping separators, with unicode and binary
+
+        self.assertEqual(splitany(u'aabdabcd', [u'a']), [u'', u'', u'bd', u'bcd'])
+        self.assertEqual(splitany(u'aabdabcd', [b'a']), [u'', u'', u'bd', u'bcd'])
+        self.assertEqual(splitany(b'aabdabcd', [u'a']), [b'', b'', b'bd', b'bcd'])
+        self.assertEqual(splitany(b'aabdabcd', [b'a']), [b'', b'', b'bd', b'bcd'])
+
+        self.assertEqual(splitany(u'aabdabcd', [u'ab', u'a']), [u'', u'', u'd', u'cd'])
+        self.assertEqual(splitany(b'aabdabcd', [b'ab', u'a']), [b'', b'', b'd', b'cd'])
+        self.assertEqual(splitany(u'aabdabcd', [u'a', b'ab']), [u'', u'', u'd', u'cd'])
+        self.assertEqual(splitany(b'aabdabcd', [b'a', b'ab']), [b'', b'', b'd', b'cd'])
+
+        self.assertEqual(splitany(u'aabdabcd', [b'abc', u'ab', b'a']), [u'', u'', u'd', u'd'])
+        self.assertEqual(splitany(b'aabdabcd', [u'abc', b'ab', u'a']), [b'', b'', b'd', b'd'])
+        self.assertEqual(splitany(u'aabdabcd', [u'a', b'ab', u'abc']), [u'', u'', u'd', u'd'])
+        self.assertEqual(splitany(b'aabdabcd', [b'a', u'ab', b'abc']), [b'', b'', b'd', b'd'])
