@@ -133,6 +133,15 @@ urls.update_url_params('http://www.params.com?a=aaa', a='aaa')  # 'http://www.pa
 urls.update_url_params('http://www.params.com?a=aaa', a='xxx')  # 'http://www.params.com?a=xxx'
 urls.update_url_params('http://www.params.com', b='bbb')        # 'http://www.params.com?b=bbb'
 urls.update_url_params('http://www.params.com', c=['c', 'cc'])  # 'http://www.params.com?c=c&c=cc'
+
+# Helpers to parse urls to and from parts: parses path as list and params as dict
+urls.url_to_parts('http://www.params.com/test/path?a=aaa')      # SplitResult(..., path=['test', 'path'], query={'a': 'aaa'})
+urls.parts_to_url(
+    {'netloc': 'www.params.com', 'query': {'a': 'aaa'}          # 'http://www.params.com?a=aaa'
+)
+urls.parts_to_url(
+    urls.url_to_parts('http://www.params.com/test/path?a=aaa')  # 'http://www.params.com/test/path?a=aaa'
+)
 ```
 
 Finally, XML parsing is also supported, using the cElementTree and defusedxml libraries for performance and security
