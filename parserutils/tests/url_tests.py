@@ -1,8 +1,7 @@
-import collections
 import six
 import unittest
 
-from parserutils.collections import reduce_value
+from parserutils.collections import reduce_value, wrap_value
 from parserutils.strings import EMPTY_BIN, EMPTY_STR
 from parserutils.urls import _urllib_parse
 from parserutils.urls import clear_cache, get_base_url, update_url_params
@@ -81,33 +80,30 @@ class URLTestCase(unittest.TestCase):
         for full_url in full_urls:
             in_url, in_params = self._parse_url(full_url)
 
-            # Test sending the same parameters
+            params = [
+                ('same', {'a': 'aaa', 'b': 'bbb', 'c': 'ccc'}),  # Test sending the same parameters
+                ('diff', {'a': 'xxx', 'b': 'yyy', 'c': 'zzz'}),  # Test updating the same parameters
+                ('add', {'x': 'xxx', 'y': 'yyy', 'z': 'zzz'}),   # Test adding new parameters
+                ('rep', {'replace_all': 0}),                     # Test with "replace_all" when not "False"
+                ('rep', {'replace_all': 1}),                     # Test with "replace_all" when not "True"
+                ('opt', {'replace_all': False}),                 # Test with "replace_all" option disabled
+                ('opt', {'x': 'xxx', 'y': 'yyy', 'z': 'zzz', 'replace_all': True})  # Test with "replace_all" option
+            ]
 
-            out_url, out_params = self._parse_url(update_url_params(full_url, a='aaa', b='bbb', c='ccc'))
-            self.assertEqual(out_url, in_url)
-            self.assertEqual(out_params, in_params)
+            for comp, new_params in params:
+                out_url, out_params = self._parse_url(update_url_params(full_url, **new_params))
 
-            out_url, out_params = self._parse_url(update_url_params(full_url, **{'a': 'aaa', 'b': 'bbb', 'c': 'ccc'}))
-            self.assertEqual(out_url, in_url)
-            self.assertEqual(out_params, in_params)
+                if comp == 'add':
+                    new_params.update(in_params)
+                elif comp == 'rep':
+                    new_params.update(in_params)
+                    new_params['replace_all'] = str(new_params['replace_all'])
+                elif comp == 'opt':
+                    if not new_params.pop('replace_all'):
+                        new_params.update(in_params)
 
-            # Test updating the same parameters
-
-            new_params = {'a': 'xxx', 'b': 'yyy', 'c': 'zzz'}
-            out_url, out_params = self._parse_url(update_url_params(full_url, **new_params))
-
-            self.assertEqual(out_url, in_url)
-            self.assertEqual(out_params, new_params)
-
-            # Test adding new parameters
-
-            new_params = {'x': 'xxx', 'y': 'yyy', 'z': 'zzz'}
-            out_url, out_params = self._parse_url(update_url_params(full_url, **new_params))
-
-            new_params.update(in_params)
-
-            self.assertEqual(out_url, in_url)
-            self.assertEqual(out_params, new_params)
+                self.assertEqual(out_url, in_url)
+                self.assertEqual(out_params, in_params if comp == 'same' else new_params)
 
         # Test valid values with multiple value URL params
 
@@ -118,33 +114,29 @@ class URLTestCase(unittest.TestCase):
         for full_url in full_urls:
             in_url, in_params = self._parse_url(full_url)
 
-            # Test sending the same parameters
+            params = [
+                ('same', {'abc': {'a', 'b', 'c'}}),  # Test sending the same parameters
+                ('diff', {'abc': {'x', 'y', 'z'}}),  # Test updating the same parameters
+                ('add', {'xyz': {'x', 'y', 'z'}}),   # Test adding new parameters
+                ('rep', {'replace_all': {0, 1}}),    # Test with "replace_all" when neither "True" nor "False"
+                ('opt', {'replace_all': False}),     # Test with "replace_all" option disabled
+                ('opt', {'xyz': {'x', 'y', 'z'}, 'replace_all': True})    # Test with "replace_all" option
+            ]
 
-            out_url, out_params = self._parse_url(update_url_params(full_url, abc={'a', 'b', 'c'}))
-            self.assertEqual(out_url, in_url)
-            self.assertEqual(out_params, in_params)
+            for comp, new_params in params:
+                out_url, out_params = self._parse_url(update_url_params(full_url, **new_params))
 
-            out_url, out_params = self._parse_url(update_url_params(full_url, **{'abc': {'a', 'b', 'c'}}))
-            self.assertEqual(out_url, in_url)
-            self.assertEqual(out_params, in_params)
+                if comp == 'add':
+                    new_params.update(in_params)
+                elif comp == 'rep':
+                    new_params.update(in_params)
+                    new_params['replace_all'] = set(str(v) for v in new_params['replace_all'])
+                elif comp == 'opt':
+                    if not new_params.pop('replace_all'):
+                        new_params.update(in_params)
 
-            # Test updating the same parameters
-
-            new_params = {'abc': {'x', 'y', 'z'}}
-            out_url, out_params = self._parse_url(update_url_params(full_url, **new_params))
-
-            self.assertEqual(out_url, in_url)
-            self.assertEqual(out_params, new_params)
-
-            # Test adding new parameters
-
-            new_params = {'xyz': {'x', 'y', 'z'}}
-            out_url, out_params = self._parse_url(update_url_params(full_url, **new_params))
-
-            new_params.update(in_params)
-
-            self.assertEqual(out_url, in_url)
-            self.assertEqual(out_params, new_params)
+                self.assertEqual(out_url, in_url)
+                self.assertEqual(out_params, in_params if comp == 'same' else new_params)
 
         self.assertTrue(len(_parse_cache))
         clear_cache()
@@ -169,24 +161,17 @@ class URLTestCase(unittest.TestCase):
             self.assertEqual(out_params, new_params)
 
     def _parse_url(self, url):
-        """ Simple helper for splitting basic URL's for comparison """
+        """ Simple helper for splitting URL's for comparison """
 
-        if '?' in url:
-            base, query = url.split('?', 1)
-        else:
-            base, query = url, None
+        # Use url_lib functions to get first the base URL and then the query
+        base_url = _urllib_parse.urlunsplit(_urllib_parse.urlsplit(url)[:3] + ('', ''))
+        url_params = _urllib_parse.parse_qs(_urllib_parse.urlsplit(url)[3])
 
-        base_url = base if base.endswith('/') else base + '/'
-        if not query:
-            params = {}
-        else:
-            # Append multiple parameters under single keys as in urllib.parse_qs
-            params = collections.defaultdict(set)
-            for key, val in (p.split('=', 1) for p in query.split('&')):
-                params[key].add(val)
+        # Ensure base URL ends with '/', and that query will be a set for reliable comparisons
+        base_url = base_url if base_url.endswith('/') else base_url + '/'
+        url_params = {k: reduce_value(set(wrap_value(v))) for k, v in six.iteritems(url_params)}
 
-        # Convert defaultdict to dict, unwrapping single parameter values as well
-        return base_url, {k: reduce_value(v) for k, v in six.iteritems(params)}
+        return base_url, url_params
 
     def test_url_to_parts(self):
         """ Tests url_to_parts with general inputs """

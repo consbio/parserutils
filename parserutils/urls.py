@@ -34,15 +34,23 @@ def get_base_url(url, include_path=False):
     return base_url if base_url.endswith('/') else base_url + '/'
 
 
-def update_url_params(url, **url_params):
+def update_url_params(url, replace_all=False, **url_params):
     """ :return: url with its query updated from url_query (non-matching params are retained) """
+
+    # Ensure 'replace_all' can be sent as a url param
+    if not (replace_all is True or replace_all is False):
+        url_params['replace_all'] = replace_all
 
     if not url or not url_params:
         return url or None
 
     scheme, netloc, url_path, url_query, fragment = _urlsplit(url)
-    url_query = _parse_qs(url_query)
-    url_query.update(url_params)
+
+    if replace_all is True:
+        url_query = url_params
+    else:
+        url_query = _parse_qs(url_query)
+        url_query.update(url_params)
 
     return _urlunsplit((scheme, netloc, url_path, _unquote(_urlencode(url_query, doseq=True)), fragment))
 
