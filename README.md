@@ -113,6 +113,13 @@ strings.snake_to_camel('from_snake')              # fromSnake
 strings.snake_to_camel('_leading_and_trailing_')  # leadingAndTrailing
 strings.snake_to_camel('extra___underscores')     # extraUnderscores
 
+strings.find_all('ab??ca??bc??', '??')                         # [2, 6, 10]
+strings.find_all('ab??ca??bc??', '??', reverse=True)           # [10, 6, 2]
+strings.find_all('ab??ca??bc??', '??', limit=2, reverse=True)  # [10, 6]
+strings.find_all('ab??ca??bc??', '??', start=4)                # [6, 10]
+strings.find_all('ab??ca??bc??', '??', end=8)                  # [2, 6]
+strings.find_all('ab??ca??bc??', '??', start=4, end=8)         # [6]
+
 strings.splitany('ab:ca:bc', ',')           # Same as 'ab:ca:bc'.split(':')
 strings.splitany('ab:ca:bc', ',', 1)        # Same as 'ab:ca:bc'.split(':', 1)
 strings.splitany('ab|ca:bc', '|:')          # ['ab', 'ca', 'bc']
