@@ -2,7 +2,7 @@ import unittest
 
 from parserutils.strings import _ASCII_PUNCTUATION_MAP, ALPHANUMERIC, EMPTY_BIN, EMPTY_STR
 from parserutils.strings import camel_to_constant, camel_to_snake, constant_to_camel, snake_to_camel
-from parserutils.strings import splitany, to_ascii_equivalent
+from parserutils.strings import find_all, splitany, to_ascii_equivalent
 
 
 class StringCasingTestCase(unittest.TestCase):
@@ -130,15 +130,13 @@ class StringConversionTestCase(unittest.TestCase):
 
         # Test that known issues are handled
         known_issues = [
-            u'\u2010', u'\u2011',             # Hyphens
-            u'\u2012', u'\u2013', u'\u2014',  # Dashes
-            u'\u02b9', u'\u02bb', u'\u02bc',  # Single Quotes
-            u'\u02bd', u'\u2018', u'\u2019',  # Single Quotes
-            u'\u02ba', u'\u201d', u'\u201c',  # Double Quotes
-            u'\u3001',                        # Commas
-            u'\u2e32', u'\u2e34', u'\u2e41',  # Commas
-            u'\ufe11', u'\ufe10', u'\ufe50',  # Commas
-            u'\ufe51', u'\uff64', u'\uff0c',  # Commas
+            u'\u2010', u'\u2011', u'\u2012', u'\u2013', u'\u2014', u'\u2015',  # Hyphens and dashes
+            u'\uff63', u'\uff0d',                                              # Hyphens and dashes
+            u'\u02b9', u'\u02bb', u'\u02bc', u'\u02bd', u'\u02be', u'\u02bf',  # Single Quotes
+            u'\u2018', u'\u2019', u'\u201a', u'\u201b',                        # Single Quotes
+            u'\u02ba', u'\u201c', u'\u201d', u'\u201e', u'\u201f', u'\u2e42',  # Double Quotes
+            u'\u2e32', u'\u2e34', u'\u2e41', u'\u3001',                        # Commas
+            u'\ufe10', u'\ufe11', u'\ufe50', u'\ufe51', u'\uff0c', u'\uff64',  # Commas
         ]
         ascii_issues = u''.join(_ASCII_PUNCTUATION_MAP[c] for c in known_issues)
         joined_issues = u''.join(known_issues)
@@ -156,6 +154,104 @@ class StringConversionTestCase(unittest.TestCase):
 
 
 class StringOperationTestCase(unittest.TestCase):
+
+    def test_find_all(self):
+        """ Tests find_all with general inputs """
+
+        # Test valid empty inputs
+
+        self.assertEqual(find_all(None, None), [])
+        self.assertEqual(find_all(EMPTY_STR, None), [])
+        self.assertEqual(find_all(None, EMPTY_STR), [])
+
+        self.assertEqual(find_all(EMPTY_BIN, EMPTY_BIN), [])
+        self.assertEqual(find_all(EMPTY_BIN, EMPTY_STR), [])
+
+        self.assertEqual(find_all(EMPTY_STR, EMPTY_BIN), [])
+        self.assertEqual(find_all(EMPTY_STR, EMPTY_STR), [])
+
+        # Test with missing or invalid inputs
+
+        self.assertEqual(find_all('abc', '123'), [])
+        self.assertEqual(find_all('abc', 'abcabc'), [])
+
+        self.assertEqual(find_all('abc', 'abc', limit=0), [])
+        self.assertEqual(find_all('abc', 'abc', limit=0, reverse=True), [])
+        self.assertEqual(find_all('abc', 'abc', limit=0, start=0, end=3), [])
+        self.assertEqual(find_all('abc', 'abc', limit=0, start=0, end=3, reverse=True), [])
+
+        self.assertEqual(find_all('abc', 'abc', start=3, end=0), [])
+        self.assertEqual(find_all('abc', 'abc', start=3, end=0, limit=1), [])
+        self.assertEqual(find_all('abc', 'abc', start=3, end=0, reverse=True), [])
+        self.assertEqual(find_all('abc', 'abc', start=3, end=0, limit=1, reverse=True), [])
+
+        # Test with valid, non-empty inputs
+
+        self._test_find_all(
+            s='ab?cdef?ghijkl?mnopqrstuv?wxy?z?',
+            sub='?',
+            out=[2, 7, 14, 25, 29, 31]
+        )
+        self._test_find_all(
+            s='ab??cdef??ghijkl??mnopqrstuv??wxy??z??',
+            sub='??',
+            out=[2, 8, 16, 28, 33, 36]
+        )
+        self._test_find_all(
+            s='ab???cdef???ghijkl???mnopqrstuv???wxy???z???',
+            sub='???',
+            out=[2, 9, 18, 31, 37, 41]
+        )
+
+    def _test_find_all(self, s, sub, out):
+        """ Helper to test with different inputs """
+
+        # Validate incoming inputs and outputs
+
+        # Ensure the indexes match the expected
+        self.assertEqual(find_all(s, sub), out)
+
+        for idx in out:
+            # Ensure the expected occur in s as intended
+            self.assertEqual(s[idx:idx + len(sub)], sub)
+
+        # Test with different limits
+        self.assertEqual(find_all(s, sub, limit=0), [])
+        self.assertEqual(find_all(s, sub, limit=len(s)), out)
+        self.assertEqual(find_all(s, sub, limit=len(out)), out)
+        self.assertEqual(find_all(s, sub, limit=2), out[:2])
+
+        # Test in reverse and with different limits
+        self.assertEqual(find_all(s, sub, limit=0, reverse=True), [])
+        self.assertEqual(find_all(s, sub, limit=len(s), reverse=True), out[::-1])
+        self.assertEqual(find_all(s, sub, limit=len(out), reverse=True), out[::-1])
+        self.assertEqual(find_all(s, sub, limit=2, reverse=True), out[::-1][:2])
+
+        # Test with start and end values only
+        self.assertEqual(find_all(s, sub, start=out[0], end=out[-1]), out[0:-1])
+        self.assertEqual(find_all(s, sub, start=out[1], end=out[-2]), out[1:-2])
+        self.assertEqual(find_all(s, sub, start=out[2], end=out[-3]), out[2:-3])
+
+        # Test with start and end values with different limits
+        start, end = out[0], out[-1]
+
+        self.assertEqual(find_all(s, sub, start=start, end=end, limit=0), [])
+        self.assertEqual(find_all(s, sub, start=start, end=end, limit=len(s)), out[0:-1])
+        self.assertEqual(find_all(s, sub, start=start, end=end, limit=len(out[0:-1])), out[0:-1])
+        self.assertEqual(find_all(s, sub, start=start, end=end, limit=2), out[0:-1][:2])
+
+        # Test with start and end values in reverse
+        self.assertEqual(find_all(s, sub, start=out[0], end=out[-1], reverse=True), out[0:-1][::-1])
+        self.assertEqual(find_all(s, sub, start=out[1], end=out[-2], reverse=True), out[1:-2][::-1])
+        self.assertEqual(find_all(s, sub, start=out[2], end=out[-3], reverse=True), out[2:-3][::-1])
+
+        # Test with start and end values in reverse with different limits
+        start, end = out[0], out[-1]
+
+        self.assertEqual(find_all(s, sub, start=start, end=end, limit=0, reverse=True), [])
+        self.assertEqual(find_all(s, sub, start=start, end=end, limit=len(s), reverse=True), out[0:-1][::-1])
+        self.assertEqual(find_all(s, sub, start=start, end=end, limit=len(out[0:-1]), reverse=True), out[0:-1][::-1])
+        self.assertEqual(find_all(s, sub, start=start, end=end, limit=2, reverse=True), out[0:-1][::-1][:2])
 
     def test_splitany(self):
         """ Tests splitany with general inputs """

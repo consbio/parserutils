@@ -66,6 +66,54 @@ def _underscored_to_camel(s):
     return _TO_CAMEL_REGEX.sub(lambda match: match.group(1).upper(), s.strip('_').lower())
 
 
+def find_all(s, sub, start=0, end=0, limit=-1, reverse=False):
+    """
+    Find all indexes of sub in s.
+
+    :param s: the string to search
+    :param sub: the string to search for
+    :param start: the index in s at which to begin the search (same as in ''.find)
+    :param end: the index in s at which to stop searching (same as in ''.find)
+    :param limit: the maximum number of matches to find
+    :param reverse: if False search s forwards; otherwise search backwards
+
+    :return: all occurrences of substring sub in string s
+    """
+
+    indexes = []
+
+    if not bool(s and sub):
+        return indexes
+
+    lstr = len(s)
+    if lstr <= start:
+        return indexes
+
+    lsub = len(sub)
+    if lstr < lsub:
+        return indexes
+
+    if limit == 0:
+        return indexes
+    elif limit < 0:
+        limit = lstr
+
+    end = min(end, lstr) or lstr
+    idx = s.rfind(sub, start, end) if reverse else s.find(sub, start, end)
+
+    while idx != -1:
+        indexes.append(idx)
+        if reverse:
+            idx = s.rfind(sub, start, idx - lstr)
+        else:
+            idx = s.find(sub, idx + lsub, end)
+
+        if len(indexes) >= limit:
+            break
+
+    return indexes
+
+
 def splitany(s, sep=None, maxsplit=-1):
     """
     Splits "s" into substrings using "sep" as the delimiter string. Behaves like str.split, except that:
@@ -169,13 +217,15 @@ def to_ascii_equivalent(text):
     return EMPTY_STR.join(c for c in unicodedata.normalize('NFD', text) if unicodedata.category(c) != 'Mn')
 
 _ASCII_PUNCTUATION_MAP = {
-    u'\u2010': u'-', u'\u2011': u'-',                   # Hyphens
-    u'\u2012': u'-', u'\u2013': u'-', u'\u2014': u'-',  # Dashes
-    u'\u02b9': u"'", u'\u02bb': u"'", u'\u02bc': u"'",  # Single Quotes
-    u'\u02bd': u"'", u'\u2018': u"'", u'\u2019': u"'",  # Single Quotes
-    u'\u02ba': u'"', u'\u201d': u'"', u'\u201c': u'"',  # Double Quotes
-    u'\u3001': u',',                                    # Commas
-    u'\u2e32': u',', u'\u2e34': u',', u'\u2e41': u',',  # Commas
-    u'\ufe11': u',', u'\ufe10': u',', u'\ufe50': u',',  # Commas
-    u'\ufe51': u',', u'\uff64': u',', u'\uff0c': u',',  # Commas
+    # Hyphens and dashes
+    u'\u2010': u'-', u'\u2011': u'-', u'\u2012': u'-', u'\u2013': u'-', u'\u2014': u'-', u'\u2015': u'-',
+    u'\uff0d': u'-', u'\uff63': u'-',
+    # Single quotes
+    u'\u02b9': u"'", u'\u02bb': u"'", u'\u02bc': u"'", u'\u02bd': u"'", u'\u02be': u"'", u'\u02bf': u"'",
+    u'\u2018': u"'", u'\u2019': u"'", u'\u201a': u"'", u'\u201b': u"'",
+    # Double quotes
+    u'\u02ba': u'"', u'\u201c': u'"', u'\u201d': u'"', u'\u201e': u'"', u'\u201f': u'"', u'\u2e42': u'"',
+    # Commas
+    u'\u2e32': u',', u'\u2e34': u',', u'\u2e41': u',', u'\u3001': u',',
+    u'\ufe10': u',', u'\ufe11': u',', u'\ufe50': u',', u'\ufe51': u',', u'\uff0c': u',', u'\uff64': u',',
 }
