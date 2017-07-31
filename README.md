@@ -4,7 +4,7 @@
 
 This is a library of utility functions designed to make a developer's life easier.
 
-The functions in this library are written to be both performant and Pythonic, as well as compatible with Python 2.7 and 3.5.
+The functions in this library are written to be both performant and Pythonic, as well as compatible with Python 2.7 through 3.6.
 They are both documented and covered thoroughly by unit tests that fully describe and prove their behavior.
 
 In general, my philosophy is that utility functions should be fast and handle edge cases so the caller doesn't have to take all kinds of precautions or do type checking on results.
