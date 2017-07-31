@@ -1,9 +1,12 @@
+import six
 import unittest
-
-from six import binary_type, text_type
 
 from parserutils.numbers import is_number
 from parserutils.strings import EMPTY_BIN, EMPTY_STR
+
+
+binary_type = getattr(six, 'binary_type')
+text_type = getattr(six, 'text_type')
 
 
 class NumberTestCase(unittest.TestCase):

@@ -1,10 +1,13 @@
 import datetime
+import six
 import unittest
-
-from six import binary_type, text_type
 
 from parserutils.dates import parse_dates
 from parserutils.strings import EMPTY_BIN, EMPTY_STR
+
+
+binary_type = getattr(six, 'binary_type')
+text_type = getattr(six, 'text_type')
 
 
 class DateTestCase(unittest.TestCase):

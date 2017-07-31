@@ -3,9 +3,12 @@ import six
 import string
 import unicodedata
 
-from six import binary_type, text_type
 
-xrange = getattr(six.moves, 'xrange')
+binary_type = getattr(six, 'binary_type')
+six_moves = getattr(six, 'moves')
+string_types = getattr(six, 'string_types')
+text_type = getattr(six, 'text_type')
+xrange = getattr(six_moves, 'xrange')
 
 
 ALPHANUMERIC = set(string.ascii_letters + string.digits)
@@ -13,12 +16,12 @@ PUNCTUATION = set(string.punctuation)
 
 DEFAULT_ENCODING = 'UTF-8'
 
-EMPTY_BIN = six.binary_type()
-EMPTY_STR = six.text_type()
+EMPTY_BIN = binary_type()
+EMPTY_STR = text_type()
 
 # Reduce types to minimum possible (in Python 2 there are duplicates)
-STRING_TYPE = six.string_types[0]
-STRING_TYPES = tuple(t for t in {six.binary_type, STRING_TYPE})
+STRING_TYPE = string_types[0]
+STRING_TYPES = tuple(t for t in {binary_type, STRING_TYPE})
 
 _TO_SNAKE_REGEX_1 = re.compile(r'(.)([A-Z][a-z]+)')
 _TO_SNAKE_REGEX_2 = re.compile(r'([a-z0-9])([A-Z])')

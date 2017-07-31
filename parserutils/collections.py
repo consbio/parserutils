@@ -1,8 +1,12 @@
+import six
+
 from _collections import defaultdict
 
-from six import iteritems, string_types
-
 from parserutils.strings import DEFAULT_ENCODING, EMPTY_BIN, EMPTY_STR, STRING_TYPES
+
+
+iteritems = getattr(six, 'iteritems')
+string_types = getattr(six, 'string_types')
 
 
 # DICT FUNCTIONS #
