@@ -13,10 +13,10 @@ Thus, in this library, if None will break a function it is simply returned as is
 But this is just a starting point. I welcome feedback and requests for additional functionality.
 
 
-#Installation#
+## Installation
 Install with `pip install parserutils`.
 
-#Usage#
+## Usage
 
 Here's what you can do with `dict` objects and other collections.
 ```python
