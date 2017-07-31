@@ -360,12 +360,7 @@ def remove_element(parent_to_parse, element_path, clear_empty=False):
             if clear_empty:
                 removed.extend(remove_empty_element(element, parent_segment))
 
-    if not removed:
-        return None
-    elif len(removed) == 1:
-        return removed[0]
-
-    return removed
+    return removed[0] if len(removed) == 1 else (removed or None)
 
 
 def remove_elements(parent_to_parse, element_paths, clear_empty=False):
