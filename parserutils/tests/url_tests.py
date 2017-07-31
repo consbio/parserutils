@@ -7,6 +7,10 @@ from parserutils.urls import _urllib_parse
 from parserutils.urls import clear_cache, get_base_url, update_url_params
 from parserutils.urls import url_to_parts, parts_to_url
 
+
+iteritems = getattr(six, 'iteritems')
+
+
 try:
     from urllib.parse import _parse_cache
 except ImportError:
@@ -169,7 +173,7 @@ class URLTestCase(unittest.TestCase):
 
         # Ensure base URL ends with '/', and that query will be a set for reliable comparisons
         base_url = base_url if base_url.endswith('/') else base_url + '/'
-        url_params = {k: reduce_value(set(wrap_value(v))) for k, v in six.iteritems(url_params)}
+        url_params = {k: reduce_value(set(wrap_value(v))) for k, v in iteritems(url_params)}
 
         return base_url, url_params
 
@@ -333,7 +337,7 @@ class URLTestCase(unittest.TestCase):
             }
         }
 
-        for url, data in six.iteritems(url_data):
+        for url, data in iteritems(url_data):
             valid = [
                 data.get('scheme', 'http'),
                 data.get('netloc', ''),

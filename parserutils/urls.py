@@ -6,7 +6,8 @@ except ImportError:
     from urlparse import clear_cache as _clear_cache
 
 
-_urllib_parse = getattr(six.moves, 'urllib_parse')
+_six_moves = getattr(six, 'moves')
+_urllib_parse = getattr(_six_moves, 'urllib_parse')
 
 _parse_qs = _urllib_parse.parse_qs
 _unquote = _urllib_parse.unquote
