@@ -1,7 +1,6 @@
 import os
+import six
 import unittest
-
-from six import binary_type, iteritems, string_types, text_type, StringIO
 
 from parserutils.elements import Element, ElementTree, ElementType
 from parserutils.elements import iselement, fromstring
@@ -19,6 +18,14 @@ from parserutils.elements import element_to_string, string_to_element, strip_nam
 from parserutils.elements import iter_elements, iterparse_elements, write_element
 
 from parserutils.strings import DEFAULT_ENCODING, EMPTY_BIN, EMPTY_STR
+
+
+binary_type = getattr(six, 'binary_type')
+iteritems = getattr(six, 'iteritems')
+string_types = getattr(six, 'string_types')
+text_type = getattr(six, 'text_type')
+StringIO = getattr(six, 'StringIO')
+
 
 ELEM_NAME = 'tag'
 ELEM_TEXT = 'text'
@@ -1156,8 +1163,9 @@ class XMLInsertRemoveTests(XMLTestCase):
     def assert_elements_removed(self, test_func, elem_xpaths, clear_empty=False):
         """ Ensures elements for all elem_xpaths in different data sources have been removed and cleared """
 
-        self.assertIsNone(
-            remove_elements(None, elem_xpaths, clear_empty), 'None check failed for {0}'.format(test_func)
+        self.assertEqual(
+            remove_elements(None, elem_xpaths, clear_empty), [],
+            'None check failed for {0}'.format(test_func)
         )
         self.assertEqual(
             remove_elements(self.elem_data_str, [], clear_empty), [],

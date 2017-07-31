@@ -7,8 +7,6 @@ import re
 import six
 import string
 
-from six import binary_type, iteritems, string_types
-
 from defusedxml.cElementTree import fromstring, tostring
 from defusedxml.cElementTree import iterparse
 from xml.etree.cElementTree import ElementTree, Element
@@ -16,6 +14,12 @@ from xml.etree.cElementTree import iselement
 from parserutils.strings import DEFAULT_ENCODING, STRING_TYPES
 
 ElementType = type(Element(None))  # Element module doesn't have a type
+
+
+binary_type = getattr(six, 'binary_type')
+iteritems = getattr(six, 'iteritems')
+six_moves = getattr(six, 'moves')
+string_types = getattr(six, 'string_types')
 
 
 XPATH_DELIM = '/'
@@ -198,8 +202,13 @@ def get_remote_element(url, element_path=None):
         with open(url, 'rb') as xml:
             content = xml.read()
     else:
-        urllib = getattr(six.moves, 'urllib')
-        content = urllib.request.urlopen(url).read()
+        try:
+            urllib = getattr(six_moves, 'urllib')
+            remote = urllib.request.urlopen(url)
+            content = remote.read()
+        finally:
+            # For Python 2 compliance: fails in `with` block (no `__exit__`)
+            remote.close()
 
     return get_element(strip_namespaces(content), element_path)
 
@@ -259,7 +268,7 @@ def element_is_empty(elem_to_parse, element_path=None):
     return is_empty
 
 
-def insert_element(elem_to_parse, elem_idx, elem_path, elem_txt=u'', **kwargs):
+def insert_element(elem_to_parse, elem_idx, elem_path, elem_txt=u'', **attrib_kwargs):
     """
     Creates an element named after elem_path, containing elem_txt, with kwargs
     as attributes, inserts it into elem_to_parse at elem_idx and returns it.
@@ -273,10 +282,7 @@ def insert_element(elem_to_parse, elem_idx, elem_path, elem_txt=u'', **kwargs):
 
     element = get_element(elem_to_parse)
 
-    if element is None:
-        return element
-
-    if not elem_path:
+    if element is None or not elem_path:
         return None
 
     if not elem_idx:
@@ -291,7 +297,7 @@ def insert_element(elem_to_parse, elem_idx, elem_path, elem_txt=u'', **kwargs):
             parent = get_element(element, XPATH_DELIM.join(tags[:-1]))
 
             # Insert the new element as sibling to the last one
-            return insert_element(parent, elem_idx, tags[-1], elem_txt, **kwargs)
+            return insert_element(parent, elem_idx, tags[-1], elem_txt, **attrib_kwargs)
 
         else:
             this_elem = element
@@ -306,15 +312,15 @@ def insert_element(elem_to_parse, elem_idx, elem_path, elem_txt=u'', **kwargs):
 
                     # Apply text and index to last element only
                     if idx == last_idx:
-                        next_elem = insert_element(this_elem, elem_idx, tag, elem_txt, **kwargs)
+                        next_elem = insert_element(this_elem, elem_idx, tag, elem_txt, **attrib_kwargs)
                     else:
-                        next_elem = insert_element(this_elem, 0, tag, u'', **kwargs)
+                        next_elem = insert_element(this_elem, 0, tag, u'', **attrib_kwargs)
 
                 this_elem = next_elem
 
             return this_elem
 
-    subelem = Element(elem_path, kwargs)
+    subelem = Element(elem_path, attrib_kwargs)
     subelem.text = elem_txt
 
     element.insert(elem_idx, subelem)
@@ -332,11 +338,10 @@ def remove_element(parent_to_parse, element_path, clear_empty=False):
     """
 
     element = get_element(parent_to_parse)
-
-    if element is None:
-        return element
-
     removed = []
+
+    if element is None or not element_path:
+        return None
 
     if element_exists(element, element_path):
         if XPATH_DELIM not in element_path:
@@ -355,7 +360,12 @@ def remove_element(parent_to_parse, element_path, clear_empty=False):
             if clear_empty:
                 removed.extend(remove_empty_element(element, parent_segment))
 
-    return removed[0] if len(removed) == 1 else removed
+    if not removed:
+        return None
+    elif len(removed) == 1:
+        return removed[0]
+
+    return removed
 
 
 def remove_elements(parent_to_parse, element_paths, clear_empty=False):
@@ -366,11 +376,9 @@ def remove_elements(parent_to_parse, element_paths, clear_empty=False):
     """
 
     element = get_element(parent_to_parse)
-    if element is None:
-        return element
-
     removed = []
-    if not element_paths:
+
+    if element is None or not element_paths:
         return removed
 
     if isinstance(element_paths, string_types):
@@ -391,7 +399,6 @@ def remove_empty_element(parent_to_parse, element_path, target_element=None):
     """
 
     element = get_element(parent_to_parse)
-
     removed = []
 
     if element is None or not element_path:
