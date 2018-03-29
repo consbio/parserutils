@@ -334,12 +334,12 @@ class XMLTests(XMLTestCase):
             get_remote_element(file_path, 'c'), 'Remote element returns None for namespaces at "c"'
         )
 
-        remote_url = 'http://en.wikipedia.org/wiki/XML'
+        remote_url = 'https://www.w3schools.com/xml/note.xml'
         self.assertIsNotNone(
             get_remote_element(remote_url), 'Remote element returns None for url'
         )
         self.assertIsNotNone(
-            get_remote_element(remote_url, 'head'), 'Remote element returns None for "head"'
+            get_remote_element(remote_url, 'body'), 'Remote element returns None for "body"'
         )
 
     def test_get_elements(self):
