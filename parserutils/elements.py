@@ -562,10 +562,23 @@ def get_element_text(parent_to_parse, element_path=None, default_value=u''):
     return default_value
 
 
+def get_elements_attributes(parent_to_parse, element_path=None, attrib_name=None):
+    """
+    :return: list of text representing an attribute of parent or each element at element path,
+             or a list of dicts representing all the attributes parsed from each element
+    """
+
+    attrs = _get_elements_property(parent_to_parse, element_path, 'attrib')
+
+    if not attrib_name:
+        return attrs
+
+    return [attr[attrib_name] for attr in attrs if attrib_name in attr]
+
+
 def get_elements_tail(parent_to_parse, element_path=None):
     """
-    :return: list of text following the parsed parent element, or the default
-    :see: get_element(parent_to_parse, element_path)
+    :return: list of text following parent element or each element at element_path
     """
 
     return _get_elements_property(parent_to_parse, element_path, 'tail')
@@ -573,20 +586,14 @@ def get_elements_tail(parent_to_parse, element_path=None):
 
 def get_elements_text(parent_to_parse, element_path=None):
     """
-    :return: list of text extracted from the parsed parent element, or the default
-    :see: get_element(parent_to_parse, element_path)
+    :return: list of text extracted from parent element or each element at element_path
     """
 
     return _get_elements_property(parent_to_parse, element_path, 'text')
 
 
 def _get_elements_property(parent_to_parse, element_path, prop_name):
-    """
-    Assigns an array of string values to each of the elements parsed from the parent.
-    The values must be strings, and they are assigned in the same order they are provided.
-    The operation stops when values run out, and excess values are ignored.
-    :see: get_element(parent_to_parse, element_path)
-    """
+    """ A helper to construct a list of values from """
 
     parent_element = get_element(parent_to_parse)
 
@@ -598,7 +605,7 @@ def _get_elements_property(parent_to_parse, element_path, prop_name):
 
     if not element_path:
         texts = getattr(parent_element, prop_name)
-        texts = texts.strip() if texts else None
+        texts = texts.strip() if isinstance(texts, string_types) else texts
         texts = [texts] if texts else []
     else:
         texts = [t for t in (

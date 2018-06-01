@@ -10,7 +10,7 @@ from parserutils.elements import get_element_tree, get_element, get_remote_eleme
 from parserutils.elements import element_exists, elements_exist, element_is_empty
 from parserutils.elements import insert_element, remove_element, remove_elements, remove_empty_element
 from parserutils.elements import get_element_name, get_element_attribute, get_element_attributes
-from parserutils.elements import set_element_attributes, remove_element_attributes
+from parserutils.elements import get_elements_attributes, set_element_attributes, remove_element_attributes
 from parserutils.elements import get_element_tail, get_elements_tail, get_element_text, get_elements_text
 from parserutils.elements import set_element_tail, set_elements_tail, set_element_text, set_elements_text
 from parserutils.elements import dict_to_element, element_to_dict, element_to_object
@@ -143,7 +143,8 @@ class XMLTestCase(unittest.TestCase):
         prop1 = self._reduce_property(getattr(this_elem, prop))
         prop2 = self._reduce_property(getattr(that_elem, prop))
 
-        self.assertEqual(prop1, prop2,
+        self.assertEqual(
+            prop1, prop2,
             u'Element {0} properties are not equal at /{1}: "{2}" ({3}) != "{4}" ({5})'.format(
                 prop, elem_name, prop1, type(prop1).__name__, prop2, type(prop2).__name__
             )
@@ -186,7 +187,8 @@ class XMLTestCase(unittest.TestCase):
 
             len_these, len_those = len(these_elems), len(those_elems)
 
-            self.assertEqual(len_these, len_those,
+            self.assertEqual(
+                len_these, len_those,
                 'Elements {0} have differing numbers of children: {1} != {2}'.format(
                     next_name, len_these, len_those
                 )
@@ -679,7 +681,8 @@ class XMLPropertyTests(XMLTestCase):
 
         val1, val2 = self._reduce_property(value1), self._reduce_property(value2)
 
-        self.assertEqual(val1, val2,
+        self.assertEqual(
+            val1, val2,
             'Element {0} properties are not equal: "{1}" ({2}) != "{3}" ({4})'.format(
                 prop, val1, type(val1).__name__, val2, type(val2).__name__
             )
@@ -849,6 +852,30 @@ class XMLPropertyTests(XMLTestCase):
             self.elem_xpath, default_target='x', default_value='x', element_path=self.elem_xpath
         )
 
+    def test_get_elements_attributes(self):
+        """
+        Tests get_elements_attributes with null and empty elements; also
+        tests that attributes returned from different data sources match those expected
+        """
+        self.assert_element_property_getter(ELEM_ATTRIBS, get_elements_attributes, default_target=[])
+
+    def test_get_elements_attributes_xpath(self):
+        """
+        Tests get_elements_attributes with an XPATH with null and empty elements; also
+        tests that attributes returned from different data sources match those expected
+        """
+        self.assert_element_property_getter(
+            ELEM_ATTRIBS, get_elements_attributes,
+            self.elem_xpath, default_target=[], element_path=self.elem_xpath
+        )
+
+    def test_get_elements_tail(self):
+        """
+        Tests get_elements_tail with null and empty elements; also
+        tests that attributes returned from different data sources match those expected
+        """
+        self.assert_element_property_getter(ELEM_TAIL, get_elements_tail, default_target=[])
+
     def test_get_elements_text(self):
         """
         Tests get_elements_text with null and empty elements; also
@@ -865,13 +892,6 @@ class XMLPropertyTests(XMLTestCase):
             ELEM_TEXT, get_elements_text,
             self.elem_xpath, default_target=[], element_path=self.elem_xpath
         )
-
-    def test_get_elements_tail(self):
-        """
-        Tests get_elements_tail with null and empty elements; also
-        tests that attributes returned from different data sources match those expected
-        """
-        self.assert_element_property_getter(ELEM_TAIL, get_elements_tail, default_target=[])
 
     def test_get_elements_tail_xpath(self):
         """
@@ -944,8 +964,8 @@ class XMLPropertyTests(XMLTestCase):
         """ Tests set_elements_text with null, empty and multiple valid values, with data from different sources """
 
         target = ['x', 'y', 'z']
-        self.assert_element_property_setter(ELEM_TEXT,
-            set_elements_text, default=[], target=target[0], text_values=target
+        self.assert_element_property_setter(
+            ELEM_TEXT, set_elements_text, default=[], target=target[0], text_values=target
         )
 
     def test_set_elements_text_xpath(self):
@@ -970,26 +990,26 @@ class XMLPropertyTests(XMLTestCase):
         )
 
     def test_set_elements_tail_none(self):
-        self.assert_element_property_setter(ELEM_TAIL,
-            set_elements_tail, default=[], target=[], tail_values=None
+        self.assert_element_property_setter(
+            ELEM_TAIL, set_elements_tail, default=[], target=[], tail_values=None
         )
 
     def test_set_elements_tail_str(self):
-        self.assert_element_property_setter(ELEM_TAIL,
-            set_elements_tail, default=[], target=['x'], tail_values='x'
+        self.assert_element_property_setter(
+            ELEM_TAIL, set_elements_tail, default=[], target=['x'], tail_values='x'
         )
 
     def test_set_elements_tail_list(self):
-        self.assert_element_property_setter(ELEM_TAIL,
-            set_elements_tail, default=[], target=['x'], tail_values=['x']
+        self.assert_element_property_setter(
+            ELEM_TAIL, set_elements_tail, default=[], target=['x'], tail_values=['x']
         )
 
     def test_set_elements_tails(self):
         """ Tests set_elements_tail with null, empty and multiple valid values, with data from different sources """
 
         target = ['x', 'y', 'z']
-        self.assert_element_property_setter(ELEM_TAIL,
-            set_elements_tail, default=[], target=target[0], tail_values=target
+        self.assert_element_property_setter(
+            ELEM_TAIL, set_elements_tail, default=[], target=target[0], tail_values=target
         )
 
     def test_set_elements_tail_xpath(self):
