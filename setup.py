@@ -18,11 +18,16 @@ class RunTests(Command):
         raise SystemExit(errno)
 
 
+with open('README.md') as readme:
+    long_description = readme.read()
+
+
 setup(
     name='parserutils',
     description='A collection of performant parsing utilities',
+    long_description=long_description,
     keywords='parser,parsing,utils,utilities,collections,dates,elements,numbers,strings,url,xml',
-    version='1.1',
+    version='1.1.1',
     packages=[
         'parserutils', 'parserutils.tests'
     ],
