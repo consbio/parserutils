@@ -26,8 +26,9 @@ setup(
     name='parserutils',
     description='A collection of performant parsing utilities',
     long_description=long_description,
+    long_description_content_type='text/markdown',
     keywords='parser,parsing,utils,utilities,collections,dates,elements,numbers,strings,url,xml',
-    version='1.1.1',
+    version='1.1.2',
     packages=[
         'parserutils', 'parserutils.tests'
     ],
