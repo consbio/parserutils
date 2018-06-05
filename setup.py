@@ -22,12 +22,12 @@ setup(
     name='parserutils',
     description='A collection of performant parsing utilities',
     keywords='parser,parsing,utils,utilities,collections,dates,elements,numbers,strings,url,xml',
-    version='1.0.2',
+    version='1.1',
     packages=[
         'parserutils', 'parserutils.tests'
     ],
     install_requires=[
-        'defusedxml', 'python-dateutil', 'six'
+        'defusedxml>=0.4.1', 'python-dateutil>=2.4.2', 'six>=1.9.0'
     ],
     url='https://github.com/consbio/parserutils',
     license='BSD',
