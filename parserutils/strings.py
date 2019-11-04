@@ -219,6 +219,7 @@ def to_ascii_equivalent(text):
     text = EMPTY_STR.join(_ASCII_PUNCTUATION_MAP.get(c, c) for c in text)
     return EMPTY_STR.join(c for c in unicodedata.normalize('NFD', text) if unicodedata.category(c) != 'Mn')
 
+
 _ASCII_PUNCTUATION_MAP = {
     # Hyphens and dashes
     u'\u2010': u'-', u'\u2011': u'-', u'\u2012': u'-', u'\u2013': u'-', u'\u2014': u'-', u'\u2015': u'-',

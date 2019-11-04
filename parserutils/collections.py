@@ -150,6 +150,7 @@ def flatten_items(items, recurse=False):
 
     return type(items)(flattened) if isinstance(items, _flatten_types) else flattened
 
+
 _flatten_types = (tuple, set)
 _flattened_types = (dict,) + STRING_TYPES
 
@@ -191,6 +192,7 @@ def remove_duplicates(items, in_reverse=False, is_unhashable=False):
         unique = EMPTY_BIN.join(bytes([i]) for i in _items if i not in buffer and not append(i))
 
     return unique if not in_reverse else unique[::-1]  # Restore original order
+
 
 _remove_dup_types = (tuple,) + STRING_TYPES
 _removed_dup_types = (dict, set)
@@ -244,6 +246,7 @@ def reduce_value(value, default=EMPTY_STR):
 
     return default if value is None else value
 
+
 _reduce_types = (list, tuple)
 
 
@@ -263,5 +266,6 @@ def wrap_value(value, include_empty=False):
         return [value]
 
     return value if include_empty else filter_empty(value, [])
+
 
 _wrap_types = (dict,) + STRING_TYPES
