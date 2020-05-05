@@ -1,3 +1,4 @@
+import mock
 import os
 import six
 import unittest
@@ -55,14 +56,12 @@ class XMLTestCase(unittest.TestCase):
         self.namespace_file_path = sep.join((self.data_dir, 'namespace_data.xml'))
         self.test_file_path = sep.join((self.data_dir, 'test_data.xml'))
 
-        self.elem_ascii_file = open(self.elem_ascii_file_path)
-        self.elem_data_file = open(self.elem_data_file_path, 'rb')
-        self.namespace_file = open(self.namespace_file_path, 'rb')
-
         with open(self.elem_ascii_file_path) as data:
             self.elem_ascii_str = data.read()
         with open(self.elem_data_file_path, 'rb') as data:
             self.elem_data_str = data.read()
+        with open(self.namespace_file_path, 'rb') as data:
+            self.namespace_str = data.read()
 
         if not isinstance(self.elem_data_str, string_types):
             self.elem_data_str = self.elem_data_str.decode(DEFAULT_ENCODING)
@@ -77,7 +76,7 @@ class XMLTestCase(unittest.TestCase):
 
         self.elem_data_inputs = (
             fromstring(self.elem_data_str), ElementTree(fromstring(self.elem_data_str)),
-            self.elem_data_file, self.elem_data_bin, self.elem_data_str, self.elem_data_dict, self.elem_data_reader
+            self.elem_data_bin, self.elem_data_str, self.elem_data_dict, self.elem_data_reader
         )
         self.elem_empty_inputs = (None, _EMPTY_XML_1, _EMPTY_XML_2, EMPTY_BIN, EMPTY_STR, StringIO(''), ElementTree())
 
@@ -85,10 +84,6 @@ class XMLTestCase(unittest.TestCase):
 
     def tearDown(self):
         super(XMLTestCase, self).tearDown()
-
-        self.elem_data_file.close()
-        self.elem_data_reader.close()
-        self.namespace_file.close()
 
         if os.path.exists(self.test_file_path):
             os.remove(self.test_file_path)
@@ -307,7 +302,8 @@ class XMLTests(XMLTestCase):
         """ Tests get_element at an XPATH location with different element data """
         self.assert_element_function(get_element, self.elem_xpath, element_path=self.elem_xpath)
 
-    def test_get_remote_element(self):
+    @mock.patch('parserutils.elements.six.moves.urllib.request.urlopen')
+    def test_get_remote_element(self, mock_urlopen):
         """ Tests get_remote_element with None and a well-known URL with and without an XPATH location """
 
         self.assertIsNone(get_remote_element(None), 'None check failed for get_remote_element')
@@ -337,9 +333,20 @@ class XMLTests(XMLTestCase):
         )
 
         remote_url = 'https://www.w3schools.com/xml/note.xml'
+        return_val = (
+            "<note>"
+            "<to>recipient</to>"
+            "<from>sender</from>"
+            "<heading>Reminder</heading>"
+            "<body>Don't forgetweekend!</body>"
+            "</note>"
+        )
+
+        mock_urlopen.return_value = StringIO(return_val)
         self.assertIsNotNone(
             get_remote_element(remote_url), 'Remote element returns None for url'
         )
+        mock_urlopen.return_value = StringIO(return_val)
         self.assertIsNotNone(
             get_remote_element(remote_url, 'body'), 'Remote element returns None for "body"'
         )
@@ -511,7 +518,7 @@ class XMLTests(XMLTestCase):
             'Binary equality test failed for string_to_element'
         )
         self.assert_elements_are_equal(
-            string_to_element(StringIO(self.elem_data_str)), parsed,
+            string_to_element(self.elem_data_reader), parsed,
             'StringIO equality test failed for string_to_element'
         )
 
@@ -567,11 +574,11 @@ class XMLTests(XMLTestCase):
         self.assertIsNone(iterparse_elements(EMPTY_STR, None), 'Empty check failed for iter_elements')
 
         # Test with file path and file object
-        self._test_iterparse_elements_op(self.elem_ascii_file, self.elem_ascii_str)
+        self._test_iterparse_elements_op(StringIO(self.elem_ascii_str), self.elem_ascii_str)
         self._test_iterparse_elements_op(self.elem_ascii_file_path, self.elem_ascii_str)
 
         # Test with file path and file object
-        self._test_iterparse_elements_op(self.elem_data_file, self.elem_data_str)
+        self._test_iterparse_elements_op(self.elem_data_reader, self.elem_data_str)
         self._test_iterparse_elements_op(self.elem_data_file_path, self.elem_data_str)
 
     def _test_iterparse_elements_op(self, elem_to_parse, target_string):
@@ -606,7 +613,8 @@ class XMLTests(XMLTestCase):
         self.assertEqual(strip_namespaces(StringIO('')), u'', 'IO check failed for strip_namespaces')
         self.assertEqual(strip_namespaces([]), [], 'List check failed for strip_namespaces')
 
-        self._test_strip_namespaces(self.namespace_file)
+        with open(self.namespace_file_path, 'rb') as namespace_file:
+            self._test_strip_namespaces(namespace_file)
 
     def test_strip_namespaces_with_binary(self):
         """ Tests namespace stripping by comparing equivalent XML from different data sources """

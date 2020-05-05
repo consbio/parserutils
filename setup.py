@@ -35,6 +35,7 @@ setup(
     install_requires=[
         'defusedxml>=0.4.1', 'python-dateutil>=2.4.2', 'six>=1.9.0'
     ],
+    tests_require=['mock'],
     url='https://github.com/consbio/parserutils',
     license='BSD',
     cmdclass={'test': RunTests}
