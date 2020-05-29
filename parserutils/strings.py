@@ -191,6 +191,7 @@ def splitany(s, sep=None, maxsplit=-1):
 
     return parts
 
+
 _split_sep_types = STRING_TYPES + (list, tuple)
 _split_txt_types = (STRING_TYPE, list, tuple)
 
