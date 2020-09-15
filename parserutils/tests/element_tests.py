@@ -873,9 +873,23 @@ class XMLPropertyTests(XMLTestCase):
         tests that attributes returned from different data sources match those expected
         """
         self.assert_element_property_getter(
-            ELEM_ATTRIBS, get_elements_attributes,
-            self.elem_xpath, default_target=[], element_path=self.elem_xpath
+            ELEM_ATTRIBS, get_elements_attributes, self.elem_xpath,
+            default_target=[], element_path=self.elem_xpath
         )
+
+    def test_get_elements_attributes_xpath_attrs(self):
+        """
+        Tests get_elements_attributes with an XPATH with null and empty elements; also
+        tests that attributes returned from different data sources match those expected
+        """
+        base_elem = fromstring(self.elem_data_str).find(self.elem_xpath)
+        base_prop = getattr(base_elem, ELEM_ATTRIBS)
+
+        # Test all attributes at path "c" for all but self.elem_data_reader, which can only be read once
+        for data in self.elem_data_inputs[:-1]:
+            for attr in base_prop:
+                parsed = get_elements_attributes(data, element_path=self.elem_xpath, attrib_name=attr)
+                self.assert_element_values_equal(ELEM_ATTRIBS, parsed[0], base_prop[attr])
 
     def test_get_elements_tail(self):
         """
