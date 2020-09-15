@@ -22,7 +22,7 @@ def clear_cache():
 
 
 def get_base_url(url, include_path=False):
-    """ :return: the url without the query or fragment segments """
+    """ :return: the url without the query or fragment segments, but always with trailing slash """
 
     if not url:
         return None
@@ -33,6 +33,12 @@ def get_base_url(url, include_path=False):
     ))
 
     return base_url if base_url.endswith('/') else base_url + '/'
+
+
+def has_trailing_slash(url):
+    """ :return: true if the part of the url before parameters ends with a slash, false otherwise """
+
+    return False if not url else url.split('?', 1)[0].endswith('/')
 
 
 def update_url_params(url, replace_all=False, **url_params):
@@ -47,6 +53,8 @@ def update_url_params(url, replace_all=False, **url_params):
 
     scheme, netloc, url_path, url_query, fragment = _urlsplit(url)
 
+    if has_trailing_slash(url) and not url_path.endswith('/'):
+        url_path += '/'
     if replace_all is True:
         url_query = url_params
     else:
@@ -77,7 +85,7 @@ def url_to_parts(url):
     return _urllib_parse.SplitResult(scheme, netloc, path, query, fragment)
 
 
-def parts_to_url(parts=None, scheme=None, netloc=None, path=None, query=None, fragment=None):
+def parts_to_url(parts=None, scheme=None, netloc=None, path=None, query=None, fragment=None, trailing_slash=False):
     """ Build url urlunsplit style, but optionally handle path as a list and/or query as a dict """
 
     if isinstance(parts, _urllib_parse.SplitResult):
@@ -90,7 +98,14 @@ def parts_to_url(parts=None, scheme=None, netloc=None, path=None, query=None, fr
         fragment = parts.get('fragment', '')
 
     if isinstance(path, (list, tuple)):
-        path = '/' + '/'.join(path).strip('/')
+        path = '/'.join(path).strip('/')
+
+    path = path or '/'
+    if trailing_slash and not path.endswith('/'):
+        path += '/'
+    if not trailing_slash and path.endswith('/'):
+        path = path.rstrip('/')
+
     if isinstance(query, (dict, tuple)):
         query = _unquote(_urlencode(query, doseq=True))
 
