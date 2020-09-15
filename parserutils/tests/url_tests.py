@@ -68,6 +68,8 @@ class URLTestCase(unittest.TestCase):
             ('http://www.base_url.com/test/path/', True),
             ('http://www.base_url.com?a=aaa&c=ccc&b=bbb', False),
             ('http://www.base_url.com/?a=aaa&c=ccc&b=bbb', True),
+            ('http://www.base_url.com#x=xxx&y=yyy&z=zzz', False),
+            ('http://www.base_url.com/#x=xxx&y=yyy&z=zzz', True),
             ('http://www.base_url.com/test/path?a=aaa&c=ccc&b=bbb', False),
             ('http://www.base_url.com/test/path/?a=aaa&c=ccc&b=bbb', True),
         )

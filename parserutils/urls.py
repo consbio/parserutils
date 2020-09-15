@@ -38,7 +38,7 @@ def get_base_url(url, include_path=False):
 def has_trailing_slash(url):
     """ :return: true if the part of the url before parameters ends with a slash, false otherwise """
 
-    return False if not url else url.split('?', 1)[0].endswith('/')
+    return False if not url else url.split('?', 1)[0].split('#', 1)[0].endswith('/')
 
 
 def update_url_params(url, replace_all=False, **url_params):
