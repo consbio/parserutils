@@ -78,7 +78,7 @@ def find_all(s, sub, start=0, end=0, limit=-1, reverse=False):
     :param start: the index in s at which to begin the search (same as in ''.find)
     :param end: the index in s at which to stop searching (same as in ''.find)
     :param limit: the maximum number of matches to find
-    :param reverse: if False search s forwards; otherwise search backwards
+    :param reverse: if False search s forwards, otherwise search backwards
 
     :return: all occurrences of substring sub in string s
     """

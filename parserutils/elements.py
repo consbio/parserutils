@@ -455,8 +455,7 @@ def get_elements(parent_to_parse, element_path):
 
 def get_element_attribute(elem_to_parse, attrib_name, default_value=u''):
     """
-    :return: an attribute from the parsed element if it has the attribute,
-    otherwise the default value
+    :return: an attribute from the parsed element if it has the attribute, otherwise the default value
     """
 
     element = get_element(elem_to_parse)
@@ -528,8 +527,7 @@ def get_element_name(parent_to_parse):
 
 def get_element_tail(parent_to_parse, element_path=None, default_value=u''):
     """
-    :return: text following the parsed parent element if it exists,
-    otherwise the default value.
+    :return: text following the parsed parent element if it exists, otherwise the default value
     :see: get_element(parent_to_parse, element_path)
     """
 
@@ -546,8 +544,7 @@ def get_element_tail(parent_to_parse, element_path=None, default_value=u''):
 
 def get_element_text(parent_to_parse, element_path=None, default_value=u''):
     """
-    :return: text from the parsed parent element if it has a text value,
-    otherwise the default value.
+    :return: text from the parsed parent element if it has a text value, otherwise the default value
     :see: get_element(parent_to_parse, element_path)
     """
 
@@ -761,8 +758,9 @@ def dict_to_element(element_as_dict):
 
 def element_to_dict(elem_to_parse, element_path=None, recurse=True):
     """
-    :return: an element losslessly as a dictionary. If recurse is True,
-    the element's children are included, otherwise they are omitted.
+    :return: an element losslessly as a dictionary
+
+    If recurse is True, the element's children are included, otherwise they are omitted.
 
     The resulting Dictionary will have the following attributes:
         - name: the name of the element tag
