@@ -53,8 +53,6 @@ def update_url_params(url, replace_all=False, **url_params):
 
     scheme, netloc, url_path, url_query, fragment = _urlsplit(url)
 
-    if has_trailing_slash(url) and not url_path.endswith('/'):
-        url_path += '/'
     if replace_all is True:
         url_query = url_params
     else:
