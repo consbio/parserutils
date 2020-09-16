@@ -123,6 +123,7 @@ def filter_empty(values, default=None):
 
     return values
 
+
 _filter_types = (list, tuple, set)
 _filtered_types = (dict,) + STRING_TYPES
 
