@@ -291,9 +291,6 @@ class URLTestCase(unittest.TestCase):
     def test_parts_to_url(self):
         """ Tests parts_to_url with general inputs """
 
-        SplitResult = _urllib_parse.SplitResult
-        urlsplit = _urllib_parse.urlsplit
-
         # Test empty values
         self.assertEqual(parts_to_url(), None)
         self.assertEqual(parts_to_url(None), None)
@@ -306,68 +303,77 @@ class URLTestCase(unittest.TestCase):
 
         url = 'http://netloc/path?query=true#frag'
 
+        urlsplit = _urllib_parse.urlsplit
         self.assertEqual(parts_to_url(urlsplit(url)), url)                    # as SplitResult
         self.assertEqual(parts_to_url(None, *urlsplit(url)), url)             # as ordered args
         self.assertEqual(parts_to_url(urlsplit(url)._asdict()), url)          # as dict
         self.assertEqual(parts_to_url(None, **urlsplit(url)._asdict()), url)  # as keyword args
 
-        # Test urls with different parameter configurations
-
         url_data = {
+            # netloc only
             'http://one.base_url.com/': {'netloc': 'one.base_url.com'},
+            # scheme and netloc
             'http://two.base_url.com/': {'scheme': 'http', 'netloc': 'two.base_url.com'},
+            # scheme and netloc, all others empty
             'http://www.base_url.com/': {
-                'scheme': 'http', 'netloc': 'www.base_url.com', 'path': [], 'query': {}, 'fragment': ''
+                'scheme': 'http', 'netloc': 'www.base_url.com', 'path': '', 'query': {}, 'fragment': ''
             },
-            'http://www.base_url.com/': {
-                'scheme': 'http', 'netloc': 'www.base_url.com', 'path': [], 'query': {}, 'fragment': ''
-            },
+            # scheme, netloc and query
             'http://www.base_url.com/?a=aaa': {
-                'scheme': 'http', 'netloc': 'www.base_url.com',
-                'path': [], 'query': {'a': 'aaa'}, 'fragment': ''
+                'scheme': 'http', 'netloc': 'www.base_url.com', 'path': [], 'query': {'a': 'aaa'}, 'fragment': ''
             },
+            # scheme and netloc with port, all others empty
             'http://www.base_url.com:8080/': {
-                'scheme': 'http', 'netloc': 'www.base_url.com:8080', 'path': [], 'query': {}, 'fragment': ''
+                'scheme': 'http', 'netloc': 'www.base_url.com:8080', 'path': (), 'query': {}, 'fragment': ''
             },
+            # scheme, netloc with port, and query
             'http://www.base_url.com:8080/?a=aaa': {
-                'scheme': 'http', 'netloc': 'www.base_url.com:8080',
-                'path': [], 'query': {'a': 'aaa'}, 'fragment': ''
+                'scheme': 'http', 'netloc': 'www.base_url.com:8080', 'path': '', 'query': {'a': 'aaa'}, 'fragment': ''
             },
+            # scheme, netloc, and fragment
             'http://www.base_url.com/#x=xxx&y=yyy&z=zzz': {
                 'scheme': 'http', 'netloc': 'www.base_url.com',
                 'path': [], 'query': {}, 'fragment': 'x=xxx&y=yyy&z=zzz'
             },
+            # scheme, netloc, and fragment with trailing #
             'http://www.base_url.com/#x=xxx&y=yyy&z=zzz#': {
                 'scheme': 'http', 'netloc': 'www.base_url.com',
-                'path': [], 'query': {}, 'fragment': 'x=xxx&y=yyy&z=zzz#'
+                'path': (), 'query': {}, 'fragment': 'x=xxx&y=yyy&z=zzz#'
             },
+            # scheme, netloc, and path
             'http://www.base_url.com/test/path/': {
                 'scheme': 'http', 'netloc': 'www.base_url.com',
                 'path': ['test', 'path'], 'query': {}, 'fragment': ''
             },
+            # scheme, netloc, path and query
             'http://www.base_url.com/test/path/?b=bbb': {
                 'scheme': 'http', 'netloc': 'www.base_url.com',
                 'path': ['test', 'path'], 'query': {'b': 'bbb'}, 'fragment': ''
             },
+            # scheme, netloc, path, query and fragment
             'http://www.base_url.com/test/path/?c=ccc#x=xxx&y=yyy&z=zzz': {
                 'scheme': 'http', 'netloc': 'www.base_url.com',
                 'path': ['test', 'path'], 'query': {'c': 'ccc'}, 'fragment': 'x=xxx&y=yyy&z=zzz'
             },
+            # scheme, netloc and query as tuple
             'http://www.base_url.com/?c=ccc&b=bbb&a=aaa': {
                 'scheme': 'http', 'netloc': 'www.base_url.com',
-                'path': [], 'query': (('c', ['ccc']), ('b', ['bbb']), ('a', ['aaa'])), 'fragment': ''
+                'path': '', 'query': (('c', ['ccc']), ('b', ['bbb']), ('a', ['aaa'])), 'fragment': ''
             },
+            # scheme, netloc, query as tuple and fragment
             'http://www.base_url.com/?c=ccc&b=bbb&a=aaa#x=xxx&y=yyy&z=zzz': {
                 'scheme': 'http', 'netloc': 'www.base_url.com',
                 'path': [], 'query': (('c', ['ccc']), ('b', ['bbb']), ('a', ['aaa'])), 'fragment': 'x=xxx&y=yyy&z=zzz'
             },
+            # scheme, netloc, path, query as dict and fragment
             'http://www.base_url.com/test/path/?c=ccc&b=bbb&a=aaa#x=xxx&y=yyy&z=zzz': {
                 'scheme': 'http',
                 'netloc': 'www.base_url.com',
                 'path': ['test', 'path'],
-                'query': (('c', ['ccc']), ('b', ['bbb']), ('a', ['aaa'])),
+                'query': {'c': ['ccc'], 'b': ['bbb'], 'a': ['aaa']},
                 'fragment': 'x=xxx&y=yyy&z=zzz'
             },
+            # scheme, netloc, longer path, query as tuple and fragment
             'http://www.base_url.com/test/path/again/?c=ccc&c=yyy&a=aaa&a=xxx&b=zzz&b=bbb#x=aaa&y=bbb&z=ccc': {
                 'scheme': 'http',
                 'netloc': 'www.base_url.com',
@@ -378,43 +384,71 @@ class URLTestCase(unittest.TestCase):
         }
 
         for url, data in iteritems(url_data):
-            valid = [
-                data.get('scheme', 'http'),
-                data.get('netloc', ''),
-                data.get('path', '/'),
-                data.get('query', ''),
-                data.get('fragment', '')
-            ]
-            parts = SplitResult(*valid)
+            # Test parts_to_url with all combinations of test data
+            self._assert_parts_to_url(url, data, trailing_slash=None)
+            self._assert_parts_to_url(url, data, trailing_slash=True)
+            self._assert_parts_to_url(url, data, trailing_slash=False)
 
-            stripped_url = url.rstrip('/').replace('/?', '?').replace('/#', '#')
+            # Test that url_to_parts/parts_to_url behave exactly like urlsplit/urlunsplit
 
-            # Test with parts=dict
-            self.assertEqual(parts_to_url(data), stripped_url)
-            self.assertEqual(parts_to_url(data, trailing_slash=True), url)
+            # With trailing slash
+            parts = _urllib_parse.urlsplit(url)
+            self.assertEqual(parts_to_url(parts), _urllib_parse.urlunsplit(parts))
+            self.assertEqual(parts_to_url(url_to_parts(url), trailing_slash=True), _urllib_parse.urlunsplit(parts))
 
-            # Test with parts=SplitResult
-            self.assertEqual(parts_to_url(parts), stripped_url)
-            self.assertEqual(parts_to_url(parts, trailing_slash=True), url)
+            # Without trailing slash
+            url = url.rstrip('/').replace('/?', '?').replace('/#', '#')
+            parts = _urllib_parse.urlsplit(url)
+            self.assertEqual(parts_to_url(parts), _urllib_parse.urlunsplit(parts))
+            self.assertEqual(parts_to_url(url_to_parts(url)), _urllib_parse.urlunsplit(parts))
 
-            if len(data) == 5:
-                # Test with individual parameterized args
-                self.assertEqual(parts_to_url(**data), stripped_url)
-                self.assertEqual(parts_to_url(trailing_slash=True, **data), url)
+    def _assert_parts_to_url(self, url, data, trailing_slash):
 
-            # Test with a valid list of ordered args
-            self.assertEqual(parts_to_url(None, *valid), stripped_url)
-            self.assertEqual(parts_to_url(None, *valid, trailing_slash=True), url)
+        def urlunsplit(url_parts):
+            """ Helper to convert URL data for urlunsplit """
 
-            # Test with an invalid list of ordered args
+            path = url_parts[2]
+            if not isinstance(path, six.string_types):
+                url_parts[2] = '/'.join(path)
 
-            # Corrupt lists and strings by doubling them, and dicts by reordering them
-            invalid = [dict(d) if isinstance(d, (dict, tuple)) else d * 2 for d in valid]
+            query = url_parts[3]
+            if not isinstance(query, six.string_types):
+                url_parts[3] = _urllib_parse.unquote(_urllib_parse.urlencode(query, doseq=True))
 
-            # Ensure invalid are corrupt, then that they are ignored
+            return _urllib_parse.urlunsplit([p or '' for p in url_parts])
 
-            self.assertNotEqual(parts_to_url(None, *invalid), stripped_url)
-            self.assertNotEqual(parts_to_url(None, *invalid, trailing_slash=True), url)
+        valid = [
+            data.get('scheme', 'http'),
+            data.get('netloc', ''),
+            data.get('path', '/' if trailing_slash else ''),
+            data.get('query', ''),
+            data.get('fragment', '')
+        ]
+        parts = _urllib_parse.SplitResult(*valid)
 
-            self.assertEqual(parts_to_url(parts, *invalid), stripped_url)
-            self.assertEqual(parts_to_url(parts, *invalid, trailing_slash=True), url)
+        if trailing_slash is None:
+            url = urlunsplit(valid)
+        elif trailing_slash is False:
+            url = url.rstrip('/').replace('/?', '?').replace('/#', '#')
+
+        # Test with parts=dict
+        self.assertEqual(parts_to_url(data, trailing_slash=trailing_slash), url)
+
+        # Test with parts=SplitResult
+        self.assertEqual(parts_to_url(parts, trailing_slash=trailing_slash), url)
+
+        if len(data) == 5:
+            # Test with individual parameterized args
+            self.assertEqual(parts_to_url(trailing_slash=trailing_slash, **data), url)
+
+        # Test with a valid list of ordered args
+        self.assertEqual(parts_to_url(None, *valid, trailing_slash=trailing_slash), url)
+
+        # Test with an invalid list of ordered args
+
+        # Corrupt lists and strings by doubling them, and dicts by reordering them
+        invalid = [dict(**d) if isinstance(d, dict) else d * 2 for d in valid]
+
+        # Ensure invalid are corrupt, then that they are ignored
+        self.assertNotEqual(parts_to_url(None, *invalid, trailing_slash=trailing_slash), url)
+        self.assertEqual(parts_to_url(parts, *invalid, trailing_slash=trailing_slash), url)

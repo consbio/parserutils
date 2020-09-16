@@ -83,8 +83,13 @@ def url_to_parts(url):
     return _urllib_parse.SplitResult(scheme, netloc, path, query, fragment)
 
 
-def parts_to_url(parts=None, scheme=None, netloc=None, path=None, query=None, fragment=None, trailing_slash=False):
-    """ Build url urlunsplit style, but optionally handle path as a list and/or query as a dict """
+def parts_to_url(parts=None, scheme=None, netloc=None, path=None, query=None, fragment=None, trailing_slash=None):
+    """
+    Build url urlunsplit style, but optionally handle path as a list and/or query as a dict
+    :param parts: a SplitResult of urlsplit, or a dict with keys corresponding to the same
+    :param scheme..fragment: the individual values contained in a urlsplit SplitResult
+    :param trailing_slash: if True, add a slash after path; if False, remove it; otherwise, leave it as is
+    """
 
     if isinstance(parts, _urllib_parse.SplitResult):
         scheme, netloc, path, query, fragment = parts
@@ -96,13 +101,14 @@ def parts_to_url(parts=None, scheme=None, netloc=None, path=None, query=None, fr
         fragment = parts.get('fragment', '')
 
     if isinstance(path, (list, tuple)):
-        path = '/'.join(path).strip('/')
+        path = '/'.join(path)
 
-    path = path or '/'
-    if trailing_slash and not path.endswith('/'):
-        path += '/'
-    if not trailing_slash and path.endswith('/'):
-        path = path.rstrip('/')
+    if trailing_slash is not None:
+        path = path or '/'
+        if trailing_slash and not path.endswith('/'):
+            path += '/'
+        if not trailing_slash and path.endswith('/'):
+            path = path.rstrip('/')
 
     if isinstance(query, (dict, tuple)):
         query = _unquote(_urlencode(query, doseq=True))
