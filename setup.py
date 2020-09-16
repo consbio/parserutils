@@ -28,7 +28,7 @@ setup(
     long_description=long_description,
     long_description_content_type='text/markdown',
     keywords='parser,parsing,utils,utilities,collections,dates,elements,numbers,strings,url,xml',
-    version='1.2.1',
+    version='1.2.2',
     packages=[
         'parserutils', 'parserutils.tests'
     ],
