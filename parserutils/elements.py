@@ -262,7 +262,7 @@ def element_is_empty(elem_to_parse, element_path=None):
         (element.text is None or not element.text.strip()) and
         (element.tail is None or not element.tail.strip()) and
         (element.attrib is None or not len(element.attrib)) and
-        (not len(element.getchildren()))
+        (not len(list(element)))
     )
 
     return is_empty

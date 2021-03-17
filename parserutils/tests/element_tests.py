@@ -218,7 +218,7 @@ class XMLTests(XMLTestCase):
         for data in self.elem_data_inputs:
             data = clear_children(data)
             self.assertEqual(
-                data.getchildren(), [], 'Clear children failed for input type {0}'.format(type(data).__name__)
+                list(data), [], 'Clear children failed for input type {0}'.format(type(data).__name__)
             )
 
     def test_clear_children_xpath(self):
@@ -227,7 +227,7 @@ class XMLTests(XMLTestCase):
         for data in self.elem_data_inputs:
             data = clear_children(data, self.elem_xpath)
             self.assertEqual(
-                data.getchildren(), [], 'Clear children XPATH failed for input type {0}'.format(type(data).__name__)
+                list(data), [], 'Clear children XPATH failed for input type {0}'.format(type(data).__name__)
             )
 
     def assert_element_cleared(self, elem, elem_type, msg='Clear element'):
@@ -237,8 +237,8 @@ class XMLTests(XMLTestCase):
         self.assertFalse(bool(elem.tail), '{0} failed for {1}: tail == "{2}"'.format(msg, elem_type, elem.tail))
         self.assertFalse(bool(elem.attrib), '{0} failed for {1}: attrib == "{2}"'.format(msg, elem_type, elem.attrib))
         self.assertFalse(
-            bool(elem.getchildren()),
-            '{0} failed for {1}: children == "{2}"'.format(msg, elem_type, elem.getchildren())
+            bool(list(elem)),
+            '{0} failed for {1}: children == "{2}"'.format(msg, elem_type, list(elem))
         )
 
     def test_clear_element(self):
