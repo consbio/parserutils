@@ -40,7 +40,7 @@ class URLTestCase(unittest.TestCase):
         )
 
         # Test valid url values when include_path=False
-        out_url = 'http://www.base_url.com/'
+        out_url = 'http://www.base_url.com'
         for url in in_urls:
             self.assertEqual(get_base_url(url), out_url)
 
@@ -205,11 +205,10 @@ class URLTestCase(unittest.TestCase):
         base_url = _urllib_parse.urlunsplit(_urllib_parse.urlsplit(url)[:3] + ('', ''))
         url_params = _urllib_parse.parse_qs(_urllib_parse.urlsplit(url)[3])
 
-        # Ensure base URL ends with '/', and that query will be a set for reliable comparisons
-        base_url = base_url if base_url.endswith('/') else base_url + '/'
+        # Ensure that query will be a set for reliable comparisons
         url_params = {k: reduce_value(set(wrap_value(v))) for k, v in iteritems(url_params)}
 
-        return base_url, url_params
+        return base_url.strip('/'), url_params
 
     def test_url_to_parts(self):
         """ Tests url_to_parts with general inputs """

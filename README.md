@@ -132,10 +132,10 @@ strings.to_ascii_equivalent('smart quotes, etc.')  # Replaces with ascii quotes,
 
 # URL manipulation leverages urllib, but spares you the extra code
 
-urls.get_base_url('http://www.params.com?a=aaa')                  # 'http://www.params.com/'
-urls.get_base_url('http://www.path.com/test')                     # 'http://www.path.com/'
-urls.get_base_url('http://www.path.com/test', include_path=True)  # 'http://www.path.com/test/'
-urls.get_base_url('http://www.params.com/test?a=aaa', True)       # 'http://www.params.com/test/'
+urls.get_base_url('http://www.params.com?a=aaa')                  # 'http://www.params.com'
+urls.get_base_url('http://www.path.com/test')                     # 'http://www.path.com'
+urls.get_base_url('http://www.path.com/test', include_path=True)  # 'http://www.path.com/test'
+urls.get_base_url('http://www.params.com/test?a=aaa', True)       # 'http://www.params.com/test'
 
 urls.update_url_params('http://www.params.com?a=aaa', a='aaa')  # 'http://www.params.com?a=aaa'
 urls.update_url_params('http://www.params.com?a=aaa', a='xxx')  # 'http://www.params.com?a=xxx'

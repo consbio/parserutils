@@ -32,7 +32,7 @@ def get_base_url(url, include_path=False):
         parts.scheme, parts.netloc, (parts.path if include_path else ''), None, None
     ))
 
-    return base_url if base_url.endswith('/') else base_url + '/'
+    return base_url.strip('/')
 
 
 def has_trailing_slash(url):
