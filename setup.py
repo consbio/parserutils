@@ -14,7 +14,7 @@ class RunTests(Command):
         pass
 
     def run(self):
-        errno = subprocess.call([sys.executable, '-m', 'unittest', 'parserutils.tests.tests'])
+        errno = subprocess.call([sys.executable, '-m', 'unittest', 'parserutils.tests'])
         raise SystemExit(errno)
 
 

@@ -12,7 +12,7 @@ install:
   - "pip install coveralls"
 
 script:
-  coverage run --source=parserutils -m unittest parserutils.tests.tests
+  coverage run --source=parserutils -m unittest parserutils.tests
 
 after_success:
   coveralls
