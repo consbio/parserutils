@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "parserutils"
+version = "2.0"
+description = "A collection of performant parsing utilities"
+authors = ["dharvey-consbio <dani.harvey@consbio.org>"]
+keywords = ["keyword", "another_keyword"]
+readme = "README.md"
+homepage = "https://github.com/consbio/parserutils/"
+repository = "https://github.com/consbio/parserutils/"
+license = "BSD"
+
+[tool.poetry.dependencies]
+python = "^3.6"
+defusedxml = "^0.7.1"
+python-dateutil = "^2.8.2"
+
+[tool.poetry.dev-dependencies]
+mock = "*"
+pipdeptree = "*"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

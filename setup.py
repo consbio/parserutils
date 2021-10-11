@@ -28,13 +28,9 @@ setup(
     long_description=long_description,
     long_description_content_type='text/markdown',
     keywords='parser,parsing,utils,utilities,collections,dates,elements,numbers,strings,url,xml',
-    version='1.2.4',
-    packages=[
-        'parserutils', 'parserutils.tests'
-    ],
-    install_requires=[
-        'defusedxml>=0.4.1', 'python-dateutil>=2.4.2', 'six>=1.9.0'
-    ],
+    version='2.0',
+    packages=['parserutils'],
+    install_requires=['defusedxml>=0.7.1', 'python-dateutil>=2.8.2'],
     tests_require=['mock'],
     url='https://github.com/consbio/parserutils',
     license='BSD',
