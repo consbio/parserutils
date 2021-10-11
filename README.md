@@ -1,11 +1,11 @@
 # parserutils
 
-[![Build Status](https://travis-ci.org/consbio/parserutils.png?branch=main)](https://travis-ci.org/consbio/parserutils)
+[![Build Status](https://api.travis-ci.com/consbio/parserutils.png?branch=main)](https://app.travis-ci.com/github/consbio/parserutils)
 [![Coverage Status](https://coveralls.io/repos/github/consbio/parserutils/badge.svg?branch=main)](https://coveralls.io/github/consbio/parserutils?branch=main)
 
 This is a library of utility functions designed to make a developer's life easier.
 
-The functions in this library are written to be both performant and Pythonic, as well as compatible with Python 2.7 through 3.6.
+The functions in this library are written to be both performant and Pythonic, as well as compatible with Python 3.6 through 3.9.
 They are both documented and covered thoroughly by unit tests that fully describe and prove their behavior.
 
 In general, my philosophy is that utility functions should be fast and handle edge cases so the caller doesn't have to take all kinds of precautions or do type checking on results.
@@ -35,13 +35,13 @@ collections.setdefaults({}, {'a.b': 'bbb', 'a.c': 'ccc'})  # {'a': {'b': 'bbb', 
 collections.filter_empty(x for x in (None, [], ['a'], '', {'b'}, 'c'))      # [['a'], {'b'}, 'c']
 collections.flatten_items(x for x in ('abc', ['a', 'b', 'c'], ('d', 'e')))  # ['abc', 'a', 'b', 'c', 'd', 'e']
 
-collections.remove_duplicates('abcdefabc')                                 # 'abcdef'
-collections.remove_duplicates('abcdefabc', in_reverse=True)                # 'defabc'
-collections.remove_duplicates(['a', 'b', 'c', 'a'])                        # ['a', 'b', 'c']
-collections.remove_duplicates(('a', 'b', 'c', 'a'), in_reverse=True)       # ('b', 'c', 'a')
-collections.remove_duplicates(x for x in 'abca')                           # ['a', 'b', 'c']
-collections.remove_duplicates((x for x in 'abca'), in_reverse=True)        # ['b', 'c', 'a']
-collections.remove_duplicates((set(x) for x in 'abca'), is_hashable=True)  # [{'a'}, {'b'}, {'c'}]
+collections.remove_duplicates('abcdefabc')                                   # 'abcdef'
+collections.remove_duplicates('abcdefabc', in_reverse=True)                  # 'defabc'
+collections.remove_duplicates(['a', 'b', 'c', 'a'])                          # ['a', 'b', 'c']
+collections.remove_duplicates(('a', 'b', 'c', 'a'), in_reverse=True)         # ('b', 'c', 'a')
+collections.remove_duplicates(x for x in 'abca')                             # ['a', 'b', 'c']
+collections.remove_duplicates((x for x in 'abca'), in_reverse=True)          # ['b', 'c', 'a']
+collections.remove_duplicates((set(x) for x in 'abca'), is_unhashable=True)  # [{'a'}, {'b'}, {'c'}]
 
 collections.rindex('aba', 'a')               # 2
 collections.rindex(['a', 'b', 'a'], 'a')     # 2

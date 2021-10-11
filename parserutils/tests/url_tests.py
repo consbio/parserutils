@@ -1,20 +1,9 @@
-import six
 import unittest
+import urllib
 
-from parserutils.collections import reduce_value, wrap_value
-from parserutils.strings import EMPTY_BIN, EMPTY_STR
-from parserutils.urls import _urllib_parse
-from parserutils.urls import clear_cache, get_base_url, has_trailing_slash
-from parserutils.urls import update_url_params, url_to_parts, parts_to_url
-
-
-iteritems = getattr(six, 'iteritems')
-
-
-try:
-    from urllib.parse import _parse_cache
-except ImportError:
-    from urlparse import _parse_cache
+from ..collections import reduce_value, wrap_value
+from ..urls import get_base_url, has_trailing_slash
+from ..urls import update_url_params, url_to_parts, parts_to_url
 
 
 class URLTestCase(unittest.TestCase):
@@ -24,8 +13,8 @@ class URLTestCase(unittest.TestCase):
 
         # Test empty url values
         self.assertEqual(get_base_url(None), None)
-        self.assertEqual(get_base_url(EMPTY_BIN), None)
-        self.assertEqual(get_base_url(EMPTY_STR), None)
+        self.assertEqual(get_base_url(b''), None)
+        self.assertEqual(get_base_url(''), None)
         self.assertEqual(get_base_url([]), None)
 
         in_urls = (
@@ -48,17 +37,15 @@ class URLTestCase(unittest.TestCase):
         for url in in_urls:
             self.assertEqual(get_base_url(url, True), self._parse_url(url)[0])
 
-        self.assertTrue(len(_parse_cache))
-        clear_cache()
-        self.assertFalse(len(_parse_cache))
+        urllib.parse.clear_cache()
 
     def test_has_trailing_slash(self):
         """ Tests has_trailing_slash with general inputs """
 
         # Test empty url values
         self.assertEqual(has_trailing_slash(None), False)
-        self.assertEqual(has_trailing_slash(EMPTY_BIN), False)
-        self.assertEqual(has_trailing_slash(EMPTY_STR), False)
+        self.assertEqual(has_trailing_slash(b''), False)
+        self.assertEqual(has_trailing_slash(''), False)
         self.assertEqual(has_trailing_slash([]), False)
 
         url_results = (
@@ -82,14 +69,14 @@ class URLTestCase(unittest.TestCase):
 
         # Test empty values with no URL params
         self.assertEqual(update_url_params(None), None)
-        self.assertEqual(update_url_params(EMPTY_BIN), None)
-        self.assertEqual(update_url_params(EMPTY_STR), None)
+        self.assertEqual(update_url_params(b''), None)
+        self.assertEqual(update_url_params(''), None)
         self.assertEqual(update_url_params([]), None)
 
         # Test empty values with valid URL params
         self.assertEqual(update_url_params(None, t='test'), None)
-        self.assertEqual(update_url_params(EMPTY_BIN, t='test'), None)
-        self.assertEqual(update_url_params(EMPTY_STR, t='test'), None)
+        self.assertEqual(update_url_params(b'', t='test'), None)
+        self.assertEqual(update_url_params('', t='test'), None)
 
         # Test valid values with no URL params (ignore trailing slash)
 
@@ -169,9 +156,7 @@ class URLTestCase(unittest.TestCase):
                 self.assertEqual(out_url, in_url)
                 self.assertEqual(out_params, in_params if comp == 'same' else new_params)
 
-        self.assertTrue(len(_parse_cache))
-        clear_cache()
-        self.assertFalse(len(_parse_cache))
+        urllib.parse.clear_cache()
 
     def test_update_base_url_params(self):
         """ Tests update_url_params after calling get_base_url """
@@ -202,23 +187,23 @@ class URLTestCase(unittest.TestCase):
         """ Simple helper for splitting URL's for comparison """
 
         # Use url_lib functions to get first the base URL and then the query
-        base_url = _urllib_parse.urlunsplit(_urllib_parse.urlsplit(url)[:3] + ('', ''))
-        url_params = _urllib_parse.parse_qs(_urllib_parse.urlsplit(url)[3])
+        base_url = urllib.parse.urlunsplit(urllib.parse.urlsplit(url)[:3] + ('', ''))
+        url_params = urllib.parse.parse_qs(urllib.parse.urlsplit(url)[3])
 
         # Ensure that query will be a set for reliable comparisons
-        url_params = {k: reduce_value(set(wrap_value(v))) for k, v in iteritems(url_params)}
+        url_params = {k: reduce_value(set(wrap_value(v))) for k, v in url_params.items()}
 
         return base_url.strip('/'), url_params
 
     def test_url_to_parts(self):
         """ Tests url_to_parts with general inputs """
 
-        urlsplit = _urllib_parse.urlsplit
+        urlsplit = urllib.parse.urlsplit
 
         # Test empty values
         self.assertEqual(url_to_parts(None), None)
-        self.assertEqual(url_to_parts(EMPTY_BIN), None)
-        self.assertEqual(url_to_parts(EMPTY_STR), None)
+        self.assertEqual(url_to_parts(b''), None)
+        self.assertEqual(url_to_parts(''), None)
         self.assertEqual(url_to_parts([]), None)
         self.assertEqual(url_to_parts({}), None)
 
@@ -293,8 +278,8 @@ class URLTestCase(unittest.TestCase):
         # Test empty values
         self.assertEqual(parts_to_url(), None)
         self.assertEqual(parts_to_url(None), None)
-        self.assertEqual(parts_to_url(EMPTY_BIN), None)
-        self.assertEqual(parts_to_url(EMPTY_STR), None)
+        self.assertEqual(parts_to_url(b''), None)
+        self.assertEqual(parts_to_url(''), None)
         self.assertEqual(parts_to_url([]), None)
         self.assertEqual(parts_to_url({}), None)
 
@@ -302,7 +287,7 @@ class URLTestCase(unittest.TestCase):
 
         url = 'http://netloc/path?query=true#frag'
 
-        urlsplit = _urllib_parse.urlsplit
+        urlsplit = urllib.parse.urlsplit
         self.assertEqual(parts_to_url(urlsplit(url)), url)                    # as SplitResult
         self.assertEqual(parts_to_url(None, *urlsplit(url)), url)             # as ordered args
         self.assertEqual(parts_to_url(urlsplit(url)._asdict()), url)          # as dict
@@ -382,7 +367,7 @@ class URLTestCase(unittest.TestCase):
             }
         }
 
-        for url, data in iteritems(url_data):
+        for url, data in url_data.items():
             # Test parts_to_url with all combinations of test data
             self._assert_parts_to_url(url, data, trailing_slash=None)
             self._assert_parts_to_url(url, data, trailing_slash=True)
@@ -391,15 +376,15 @@ class URLTestCase(unittest.TestCase):
             # Test that url_to_parts/parts_to_url behave exactly like urlsplit/urlunsplit
 
             # With trailing slash
-            parts = _urllib_parse.urlsplit(url)
-            self.assertEqual(parts_to_url(parts), _urllib_parse.urlunsplit(parts))
-            self.assertEqual(parts_to_url(url_to_parts(url), trailing_slash=True), _urllib_parse.urlunsplit(parts))
+            parts = urllib.parse.urlsplit(url)
+            self.assertEqual(parts_to_url(parts), urllib.parse.urlunsplit(parts))
+            self.assertEqual(parts_to_url(url_to_parts(url), trailing_slash=True), urllib.parse.urlunsplit(parts))
 
             # Without trailing slash
             url = url.rstrip('/').replace('/?', '?').replace('/#', '#')
-            parts = _urllib_parse.urlsplit(url)
-            self.assertEqual(parts_to_url(parts), _urllib_parse.urlunsplit(parts))
-            self.assertEqual(parts_to_url(url_to_parts(url)), _urllib_parse.urlunsplit(parts))
+            parts = urllib.parse.urlsplit(url)
+            self.assertEqual(parts_to_url(parts), urllib.parse.urlunsplit(parts))
+            self.assertEqual(parts_to_url(url_to_parts(url)), urllib.parse.urlunsplit(parts))
 
     def _assert_parts_to_url(self, url, data, trailing_slash):
 
@@ -407,14 +392,14 @@ class URLTestCase(unittest.TestCase):
             """ Helper to convert URL data for urlunsplit """
 
             path = url_parts[2]
-            if not isinstance(path, six.string_types):
+            if not isinstance(path, str):
                 url_parts[2] = '/'.join(path)
 
             query = url_parts[3]
-            if not isinstance(query, six.string_types):
-                url_parts[3] = _urllib_parse.unquote(_urllib_parse.urlencode(query, doseq=True))
+            if not isinstance(query, str):
+                url_parts[3] = urllib.parse.unquote(urllib.parse.urlencode(query, doseq=True))
 
-            return _urllib_parse.urlunsplit([p or '' for p in url_parts])
+            return urllib.parse.urlunsplit([p or '' for p in url_parts])
 
         valid = [
             data.get('scheme', 'http'),
@@ -423,7 +408,7 @@ class URLTestCase(unittest.TestCase):
             data.get('query', ''),
             data.get('fragment', '')
         ]
-        parts = _urllib_parse.SplitResult(*valid)
+        parts = urllib.parse.SplitResult(*valid)
 
         if trailing_slash is None:
             url = urlunsplit(valid)

@@ -1,31 +1,24 @@
+import io
 import mock
 import os
-import six
 import unittest
 
-from parserutils.elements import Element, ElementTree, ElementType
-from parserutils.elements import iselement, fromstring
+from ..elements import Element, ElementTree, ElementType
+from ..elements import iselement, fromstring
 
-from parserutils.elements import create_element_tree, clear_children, clear_element, copy_element
-from parserutils.elements import get_element_tree, get_element, get_remote_element, get_elements
-from parserutils.elements import element_exists, elements_exist, element_is_empty
-from parserutils.elements import insert_element, remove_element, remove_elements, remove_empty_element
-from parserutils.elements import get_element_name, get_element_attribute, get_element_attributes
-from parserutils.elements import get_elements_attributes, set_element_attributes, remove_element_attributes
-from parserutils.elements import get_element_tail, get_elements_tail, get_element_text, get_elements_text
-from parserutils.elements import set_element_tail, set_elements_tail, set_element_text, set_elements_text
-from parserutils.elements import dict_to_element, element_to_dict, element_to_object
-from parserutils.elements import element_to_string, string_to_element, strip_namespaces, strip_xml_declaration
-from parserutils.elements import iter_elements, iterparse_elements, write_element
+from ..elements import create_element_tree, clear_children, clear_element, copy_element
+from ..elements import get_element_tree, get_element, get_remote_element, get_elements
+from ..elements import element_exists, elements_exist, element_is_empty
+from ..elements import insert_element, remove_element, remove_elements, remove_empty_element
+from ..elements import get_element_name, get_element_attribute, get_element_attributes
+from ..elements import get_elements_attributes, set_element_attributes, remove_element_attributes
+from ..elements import get_element_tail, get_elements_tail, get_element_text, get_elements_text
+from ..elements import set_element_tail, set_elements_tail, set_element_text, set_elements_text
+from ..elements import dict_to_element, element_to_dict, element_to_object
+from ..elements import element_to_string, string_to_element, strip_namespaces, strip_xml_declaration
+from ..elements import iter_elements, iterparse_elements, write_element
 
-from parserutils.strings import DEFAULT_ENCODING, EMPTY_BIN, EMPTY_STR
-
-
-binary_type = getattr(six, 'binary_type')
-iteritems = getattr(six, 'iteritems')
-string_types = getattr(six, 'string_types')
-text_type = getattr(six, 'text_type')
-StringIO = getattr(six, 'StringIO')
+from ..strings import DEFAULT_ENCODING
 
 
 ELEM_NAME = 'tag'
@@ -63,22 +56,22 @@ class XMLTestCase(unittest.TestCase):
         with open(self.namespace_file_path, 'rb') as data:
             self.namespace_str = data.read()
 
-        if not isinstance(self.elem_data_str, string_types):
+        if not isinstance(self.elem_data_str, str):
             self.elem_data_str = self.elem_data_str.decode(DEFAULT_ENCODING)
 
-        if isinstance(self.elem_data_str, binary_type):
+        if isinstance(self.elem_data_str, bytes):
             self.elem_data_bin = self.elem_data_str
         else:
             self.elem_data_bin = self.elem_data_str.encode(DEFAULT_ENCODING)
 
         self.elem_data_dict = element_to_dict(self.elem_data_str)
-        self.elem_data_reader = StringIO(self.elem_data_str)
+        self.elem_data_reader = io.StringIO(self.elem_data_str)
 
         self.elem_data_inputs = (
             fromstring(self.elem_data_str), ElementTree(fromstring(self.elem_data_str)),
             self.elem_data_bin, self.elem_data_str, self.elem_data_dict, self.elem_data_reader
         )
-        self.elem_empty_inputs = (None, _EMPTY_XML_1, _EMPTY_XML_2, EMPTY_BIN, EMPTY_STR, StringIO(''), ElementTree())
+        self.elem_empty_inputs = (None, _EMPTY_XML_1, _EMPTY_XML_2, b'', '', io.StringIO(''), ElementTree())
 
         self.elem_xpath = 'c'
 
@@ -94,7 +87,7 @@ class XMLTestCase(unittest.TestCase):
         if isinstance(value, list) and len(value) == 1:
             value = value[0]
 
-        if isinstance(value, string_types):
+        if isinstance(value, str):
             value = value.strip()
 
         return value
@@ -109,7 +102,7 @@ class XMLTestCase(unittest.TestCase):
         for empty in self.elem_empty_inputs:
             self.assertIsNone(
                 elem_func(empty, **elem_kwargs),
-                'Empty check failed for {0} with "{1}"'.format(elem_func_name, empty)
+                f'Empty check failed for {elem_func_name} with "{empty}"'
             )
 
         base_elem = fromstring(self.elem_data_str)
@@ -184,9 +177,7 @@ class XMLTestCase(unittest.TestCase):
 
             self.assertEqual(
                 len_these, len_those,
-                'Elements {0} have differing numbers of children: {1} != {2}'.format(
-                    next_name, len_these, len_those
-                )
+                f'Elements {next_name} have differing numbers of children: {len_these} != {len_those}'
             )
 
             for idx, child in enumerate(these_elems):
@@ -233,9 +224,9 @@ class XMLTests(XMLTestCase):
     def assert_element_cleared(self, elem, elem_type, msg='Clear element'):
         """ Ensures an element has been cleared by testing text, tail, attributes and children """
 
-        self.assertFalse(bool(elem.text), '{0} failed for {1}: text == "{2}"'.format(msg, elem_type, elem.text))
-        self.assertFalse(bool(elem.tail), '{0} failed for {1}: tail == "{2}"'.format(msg, elem_type, elem.tail))
-        self.assertFalse(bool(elem.attrib), '{0} failed for {1}: attrib == "{2}"'.format(msg, elem_type, elem.attrib))
+        self.assertFalse(bool(elem.text), f'{msg} failed for {elem_type}: text == "{elem.text}"')
+        self.assertFalse(bool(elem.tail), f'{msg} failed for {elem_type}: tail == "{elem.tail}"')
+        self.assertFalse(bool(elem.attrib), f'{msg} failed for {elem_type}: attrib == "{elem.attrib}"')
         self.assertFalse(
             bool(list(elem)),
             '{0} failed for {1}: children == "{2}"'.format(msg, elem_type, list(elem))
@@ -288,7 +279,7 @@ class XMLTests(XMLTestCase):
 
         self.assert_element_function(get_element)
 
-        for bad_xml in ({'a': 'aaa'}, 'NOT XML', StringIO('NOT XML')):
+        for bad_xml in ({'a': 'aaa'}, 'NOT XML', io.StringIO('NOT XML')):
             # Assert that invalid XML values result in SyntaxError
             with self.assertRaises(SyntaxError):
                 get_element(bad_xml)
@@ -302,7 +293,7 @@ class XMLTests(XMLTestCase):
         """ Tests get_element at an XPATH location with different element data """
         self.assert_element_function(get_element, self.elem_xpath, element_path=self.elem_xpath)
 
-    @mock.patch('parserutils.elements.six.moves.urllib.request.urlopen')
+    @mock.patch('parserutils.elements.urlopen')
     def test_get_remote_element(self, mock_urlopen):
         """ Tests get_remote_element with None and a well-known URL with and without an XPATH location """
 
@@ -342,11 +333,11 @@ class XMLTests(XMLTestCase):
             "</note>"
         )
 
-        mock_urlopen.return_value = StringIO(return_val)
+        mock_urlopen.return_value = io.StringIO(return_val)
         self.assertIsNotNone(
             get_remote_element(remote_url), 'Remote element returns None for url'
         )
-        mock_urlopen.return_value = StringIO(return_val)
+        mock_urlopen.return_value = io.StringIO(return_val)
         self.assertIsNotNone(
             get_remote_element(remote_url, 'body'), 'Remote element returns None for "body"'
         )
@@ -363,8 +354,8 @@ class XMLTests(XMLTestCase):
         )
 
         for xml in xml_content:
-            elements = get_elements(u'<a>{0}</a>'.format(xml), 'b')
-            targeted = fromstring(u'<x>{0}</x>'.format(xml)).findall('b')
+            elements = get_elements(f'<a>{xml}</a>', 'b')
+            targeted = fromstring(f'<x>{xml}</x>').findall('b')
 
             for idx, elem in enumerate(elements):
                 self.assert_elements_are_equal(elem, targeted[idx], 'a/b')
@@ -404,7 +395,7 @@ class XMLTests(XMLTestCase):
 
         # Test that invalid file or string IO objects are handled the cElementTree way
         with self.assertRaises(TypeError):
-            dict_to_element(StringIO('NOT XML'))
+            dict_to_element(io.StringIO('NOT XML'))
 
     def test_element_to_dict(self):
         """ Tests element to dictionary conversion on elements converted from different data sources """
@@ -461,10 +452,10 @@ class XMLTests(XMLTestCase):
     def test_element_to_string(self):
         """ Tests element conversion from different data sources to XML, with and without a declaration line """
 
-        self.assertEqual(EMPTY_STR, element_to_string(None), 'None check failed for element_to_string')
-        self.assertEqual(EMPTY_STR, element_to_string(EMPTY_BIN), 'Binary check failed for element_to_string')
-        self.assertEqual(EMPTY_STR, element_to_string(EMPTY_STR), 'Unicode check failed for element_to_string')
-        self.assertEqual(EMPTY_STR, element_to_string(StringIO('')), 'StringIO check failed for element_to_string')
+        self.assertEqual('', element_to_string(None), 'None check failed for element_to_string')
+        self.assertEqual('', element_to_string(b''), 'Binary check failed for element_to_string')
+        self.assertEqual('', element_to_string(''), 'Unicode check failed for element_to_string')
+        self.assertEqual('', element_to_string(io.StringIO('')), 'StringIO check failed for element_to_string')
 
         self.assertEqual(
             self.elem_data_bin.decode(DEFAULT_ENCODING).replace(os.linesep, '\n').strip(),
@@ -481,7 +472,7 @@ class XMLTests(XMLTestCase):
             data_type = type(data).__name__
             self.assertEqual(
                 element_to_string(data), as_string,
-                'With declaration check failed for element_to_string for {0}'.format(data_type)
+                f'With declaration check failed for element_to_string for {data_type}'
             )
 
     def test_element_to_string_wout_dec(self):
@@ -493,7 +484,7 @@ class XMLTests(XMLTestCase):
             data_type = type(data).__name__
             self.assertEqual(
                 element_to_string(data, include_declaration=False), as_string,
-                'Without declaration check failed for element_to_string for {0}'.format(data_type)
+                f'Without declaration check failed for element_to_string for {data_type}'
             )
 
     def test_string_to_element(self):
@@ -528,7 +519,7 @@ class XMLTests(XMLTestCase):
 
         # Test that invalid file or string IO objects are handled the cElementTree way
         with self.assertRaises(SyntaxError):
-            string_to_element(StringIO('NOT XML'))
+            string_to_element(io.StringIO('NOT XML'))
 
         for bad_xml in (self, list(), set(), tuple(), ['a'], {'b'}, ('c',)):
             # Assert that non-XML values result in TypeError
@@ -571,10 +562,10 @@ class XMLTests(XMLTestCase):
 
         # Test with some basic invalid inputs
         self.assertIsNone(iterparse_elements(None, None), 'None check failed for iter_elements')
-        self.assertIsNone(iterparse_elements(EMPTY_STR, None), 'Empty check failed for iter_elements')
+        self.assertIsNone(iterparse_elements('', None), 'Empty check failed for iter_elements')
 
         # Test with file path and file object
-        self._test_iterparse_elements_op(StringIO(self.elem_ascii_str), self.elem_ascii_str)
+        self._test_iterparse_elements_op(io.StringIO(self.elem_ascii_str), self.elem_ascii_str)
         self._test_iterparse_elements_op(self.elem_ascii_file_path, self.elem_ascii_str)
 
         # Test with file path and file object
@@ -592,7 +583,7 @@ class XMLTests(XMLTestCase):
             in the file being parsed. The original file is not changed, but a local variable can be.
             """
             if elem.tag == self.elem_xpath:
-                elem.attrib = base_attribs
+                elem.attrib = attrib_kwargs
                 self.assert_elements_are_equal(
                     elem, copy_element(elem, insert_element(base_elem, 0, self.elem_xpath))
                 )
@@ -608,9 +599,9 @@ class XMLTests(XMLTestCase):
         """ Tests namespace stripping by comparing equivalent XML from different data sources """
 
         self.assertEqual(strip_namespaces(None), None, 'None check failed for strip_namespaces')
-        self.assertEqual(strip_namespaces(EMPTY_BIN), u'', 'Bin check failed for strip_namespaces')
-        self.assertEqual(strip_namespaces(EMPTY_STR), u'', 'Str check failed for strip_namespaces')
-        self.assertEqual(strip_namespaces(StringIO('')), u'', 'IO check failed for strip_namespaces')
+        self.assertEqual(strip_namespaces(b''), u'', 'Bin check failed for strip_namespaces')
+        self.assertEqual(strip_namespaces(''), u'', 'Str check failed for strip_namespaces')
+        self.assertEqual(strip_namespaces(io.StringIO('')), u'', 'IO check failed for strip_namespaces')
         self.assertEqual(strip_namespaces([]), [], 'List check failed for strip_namespaces')
 
         with open(self.namespace_file_path, 'rb') as namespace_file:
@@ -642,9 +633,9 @@ class XMLTests(XMLTestCase):
         """ Tests namespace stripping by comparing equivalent XML from different data sources """
 
         self.assertEqual(strip_xml_declaration(None), None, 'None check failed for strip_xml_declaration')
-        self.assertEqual(strip_xml_declaration(EMPTY_BIN), u'', 'Bin check failed for strip_xml_declaration')
-        self.assertEqual(strip_xml_declaration(EMPTY_STR), u'', 'Str check failed for strip_xml_declaration')
-        self.assertEqual(strip_xml_declaration(StringIO('')), u'', 'IO check failed for strip_xml_declaration')
+        self.assertEqual(strip_xml_declaration(b''), u'', 'Bin check failed for strip_xml_declaration')
+        self.assertEqual(strip_xml_declaration(''), u'', 'Str check failed for strip_xml_declaration')
+        self.assertEqual(strip_xml_declaration(io.StringIO('')), u'', 'IO check failed for strip_xml_declaration')
         self.assertEqual(strip_xml_declaration([]), [], 'List check failed for strip_xml_declaration')
 
         target = u'<root a="aaa" b="bbb">text</root>'
@@ -739,7 +730,7 @@ class XMLPropertyTests(XMLTestCase):
 
         for data in self.elem_data_inputs:
             self.assert_element_values_equal(
-                'attributes.{0}'.format(base_key), get_element_attribute(data, base_key), base_val
+                f'attributes.{base_key}', get_element_attribute(data, base_key), base_val
             )
 
     def test_get_element_attributes(self):
@@ -925,9 +916,7 @@ class XMLPropertyTests(XMLTestCase):
             self.elem_xpath, default_target=[], element_path=self.elem_xpath
         )
 
-    def assert_element_property_setter(
-        self, prop, elem_func, elem_xpath=None, default=None, target=None, **elem_kwargs
-    ):
+    def assert_element_property_setter(self, prop, elem_func, default=None, target=None, **elem_kwargs):
         """ Ensures the properties returned by the function are as expected for all data sources """
 
         def wrap_property(value):
@@ -955,8 +944,7 @@ class XMLPropertyTests(XMLTestCase):
         """ Tests set_element_tail with an XPATH with null and empty values, and data from different sources """
 
         self.assert_element_property_setter(
-            ELEM_TAIL, set_element_tail,
-            self.elem_xpath, target='x', element_path=self.elem_xpath, element_tail='x'
+            ELEM_TAIL, set_element_tail, target='x', element_path=self.elem_xpath, element_tail='x'
         )
 
     def test_set_element_text_none(self):
@@ -969,8 +957,7 @@ class XMLPropertyTests(XMLTestCase):
         """ Tests set_element_text with an XPATH with null and empty values, and data from different sources """
 
         self.assert_element_property_setter(
-            ELEM_TEXT, set_element_text,
-            self.elem_xpath, target='x', element_path=self.elem_xpath, element_text='x'
+            ELEM_TEXT, set_element_text, target='x', element_path=self.elem_xpath, element_text='x'
         )
 
     def test_set_elements_text_none(self):
@@ -995,8 +982,7 @@ class XMLPropertyTests(XMLTestCase):
 
         elem_xpath = self.elem_xpath
         self.assert_element_property_setter(
-            ELEM_TEXT, set_elements_text,
-            elem_xpath, default=[], target=['x'], element_path=elem_xpath, text_values=['x']
+            ELEM_TEXT, set_elements_text, default=[], target=['x'], element_path=elem_xpath, text_values=['x']
         )
 
     def test_set_elements_texts_xpath(self):
@@ -1007,8 +993,7 @@ class XMLPropertyTests(XMLTestCase):
         elem_xpath = self.elem_xpath
 
         self.assert_element_property_setter(
-            ELEM_TEXT, set_elements_text,
-            elem_xpath, default=[], target=target, element_path=elem_xpath, text_values=target
+            ELEM_TEXT, set_elements_text, default=[], target=target, element_path=elem_xpath, text_values=target
         )
 
     def test_set_elements_tail_none(self):
@@ -1039,8 +1024,7 @@ class XMLPropertyTests(XMLTestCase):
 
         elem_xpath = self.elem_xpath
         self.assert_element_property_setter(
-            ELEM_TAIL, set_elements_tail,
-            elem_xpath, default=[], target=['x'], element_path=elem_xpath, tail_values=['x']
+            ELEM_TAIL, set_elements_tail, default=[], target=['x'], element_path=elem_xpath, tail_values=['x']
         )
 
     def test_set_elements_tails_xpath(self):
@@ -1052,8 +1036,7 @@ class XMLPropertyTests(XMLTestCase):
         elem_xpath = self.elem_xpath
 
         self.assert_element_property_setter(
-            ELEM_TAIL, set_elements_tail,
-            elem_xpath, default=[], target=target, element_path=elem_xpath, tail_values=target
+            ELEM_TAIL, set_elements_tail, default=[], target=target, element_path=elem_xpath, tail_values=target
         )
 
 
@@ -1072,7 +1055,7 @@ class XMLCheckTests(XMLTestCase):
 
         self.assertFalse(
             element_exists(None, self.elem_xpath),
-            'None check failed for element_exists at XPATH "{0}"'.format(self.elem_xpath)
+            f'None check failed for element_exists at XPATH "{self.elem_xpath}"'
         )
         for data in self.elem_data_inputs:
             self.assertTrue(
@@ -1083,7 +1066,7 @@ class XMLCheckTests(XMLTestCase):
     def assert_elements_exist(self, test_func, elem_xpaths=[], all_exist=False, target=True):
         """ Ensures element existence agrees with target for each data source """
 
-        self.assertFalse(elements_exist(None, elem_xpaths, all_exist), 'None check failed for {0}'.format(test_func))
+        self.assertFalse(elements_exist(None, elem_xpaths, all_exist), f'None check failed for {test_func}')
 
         for data in self.elem_data_inputs:
             exists = elements_exist(data, elem_xpaths, all_exist)
@@ -1128,14 +1111,10 @@ class XMLCheckTests(XMLTestCase):
         """ Tests element_is_empty with empty and non-empty values, and different data sources """
 
         for empty in (None, '<a />', '<a></a>'):
-            self.assertTrue(
-                element_is_empty(empty), 'Empty check failed for {0}: False'.format(text_type(empty))
-            )
+            self.assertTrue(element_is_empty(empty), f'Empty check failed for {empty}: False')
 
         for not_empty in ('<a>aaa</a>', '<a x="xxx"></a>', '<a><b /></a>', '<a><b></b></a>'):
-            self.assertFalse(
-                element_is_empty(not_empty), 'Empty check failed for {0}: True'.format(text_type(not_empty))
-            )
+            self.assertFalse(element_is_empty(not_empty), f'Empty check failed for {not_empty}: True')
 
         self.assert_element_is_empty('test_element_is_empty', target=False)
 
@@ -1144,16 +1123,14 @@ class XMLCheckTests(XMLTestCase):
 
         empties = ('<a />', '<a></a>', '<a><b /></a>', '<a><b></b></a>')
         for empty in empties:
-            self.assertTrue(element_is_empty(empty, 'b'), 'Empty check failed for {0}: False'.format(text_type(empty)))
+            self.assertTrue(element_is_empty(empty, 'b'), f'Empty check failed for {empty}: False')
 
         not_empties = (
             '<a><b>bbb</b></a>', '<a><b></b>bbb</a>', '<a><b x="xxx"></b></a>',
             '<a><b><c /></b></a>', '<a><b><c></c></b></a>'
         )
         for not_empty in not_empties:
-            self.assertFalse(
-                element_is_empty(not_empty, 'b'), 'Empty check failed for {0}: True'.format(text_type(not_empty))
-            )
+            self.assertFalse(element_is_empty(not_empty, 'b'), f'Empty check failed for {not_empty}: True')
 
         self.assert_element_is_empty('test_element_is_empty_xpath', self.elem_xpath, False)
 
@@ -1192,7 +1169,7 @@ class XMLInsertRemoveTests(XMLTestCase):
             self.assertIsNotNone(inserted, 'Insert failed for {0}'.format(type(data).__name__))
 
             # All of the original values should be accessible through inserted
-            for key, val in iteritems(elem_kwargs):
+            for key, val in elem_kwargs.items():
                 elem_val = getattr(inserted, key)
 
                 if '/' in val:
@@ -1206,16 +1183,14 @@ class XMLInsertRemoveTests(XMLTestCase):
         """ Ensures elements for all elem_xpaths in different data sources have been removed and cleared """
 
         self.assertEqual(
-            remove_elements(None, elem_xpaths, clear_empty), [],
-            'None check failed for {0}'.format(test_func)
+            remove_elements(None, elem_xpaths, clear_empty), [], f'None check failed for {test_func}'
         )
         self.assertEqual(
-            remove_elements(self.elem_data_str, [], clear_empty), [],
-            'Empty XPATH check failed for {0}'.format(test_func)
+            remove_elements(self.elem_data_str, [], clear_empty), [], f'Empty XPATH check failed for {test_func}'
         )
 
         base_elem = fromstring(self.elem_data_str)
-        is_xpath = isinstance(elem_xpaths, string_types)
+        is_xpath = isinstance(elem_xpaths, str)
 
         for data in self.elem_data_inputs:
 
@@ -1239,8 +1214,7 @@ class XMLInsertRemoveTests(XMLTestCase):
 
             ecount, rcount = len(found), len(removed_elems)
             self.assertEqual(
-                ecount, rcount,
-                'Only {0} of {1} elements were cleared for {2}'.format(rcount, ecount, test_func)
+                ecount, rcount, f'Only {rcount} of {ecount} elements were cleared for {test_func}'
             )
 
             for idx, elem in enumerate(removed_elems):
@@ -1263,12 +1237,10 @@ class XMLInsertRemoveTests(XMLTestCase):
             rcount = removed_tags.count(xtag)
 
             self.assertEqual(
-                ecount, rcount,
-                'Only {0} of {1} elements were cleared for {2}'.format(rcount, ecount, test_func)
+                ecount, rcount, f'Only {rcount} of {ecount} elements were cleared for {test_func}'
             )
             self.assertFalse(
-                iselement(cleared_elem.find(xpath)),
-                'Element {0} was not cleared for {1}'.format(cleared_elem.tag, test_func)
+                iselement(cleared_elem.find(xpath)), f'Element {cleared_elem.tag} was not cleared for {test_func}'
             )
 
     def test_insert_element(self):

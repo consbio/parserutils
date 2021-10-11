@@ -8,7 +8,6 @@ python:
 install:
   - "pip install defusedxml"
   - "pip install python-dateutil"
-  - "pip install six"
   - "pip install coveralls"
 
 script:

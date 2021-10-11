@@ -2,11 +2,9 @@ import unittest
 
 from copy import deepcopy
 
-from parserutils.collections import accumulate_items, setdefaults
-from parserutils.collections import filter_empty, flatten_items
-from parserutils.collections import remove_duplicates, rfind, rindex, reduce_value, wrap_value
-
-from parserutils.strings import EMPTY_BIN, EMPTY_STR
+from ..collections import accumulate_items, setdefaults
+from ..collections import filter_empty, flatten_items
+from ..collections import remove_duplicates, rfind, rindex, reduce_value, wrap_value
 
 
 class DictsTestCase(unittest.TestCase):
@@ -16,26 +14,26 @@ class DictsTestCase(unittest.TestCase):
 
         # Test with empty items
         self.assertEqual(accumulate_items(None), {})
-        self.assertEqual(accumulate_items(EMPTY_BIN), {})
-        self.assertEqual(accumulate_items(EMPTY_STR), {})
+        self.assertEqual(accumulate_items(b''), {})
+        self.assertEqual(accumulate_items(''), {})
         self.assertEqual(accumulate_items(dict()), {})
         self.assertEqual(accumulate_items(list()), {})
         self.assertEqual(accumulate_items(set()), {})
         self.assertEqual(accumulate_items(tuple()), {})
-        self.assertEqual(accumulate_items(x for x in EMPTY_BIN), {})
-        self.assertEqual(accumulate_items((x for x in EMPTY_STR)), {})
+        self.assertEqual(accumulate_items(x for x in b''), {})
+        self.assertEqual(accumulate_items((x for x in '')), {})
 
         # Test with items containing single key/val
         self.assertEqual(accumulate_items({(None, None)}), {None: [None]})
-        self.assertEqual(accumulate_items([(EMPTY_BIN, EMPTY_STR)]), {EMPTY_BIN: [EMPTY_STR]})
-        self.assertEqual(accumulate_items(([EMPTY_STR, EMPTY_BIN],)), {EMPTY_STR: [EMPTY_BIN]})
+        self.assertEqual(accumulate_items([(b'', '')]), {b'': ['']})
+        self.assertEqual(accumulate_items((['', b''],)), {'': [b'']})
         self.assertEqual(accumulate_items((k, v) for k, v in [['key', 'val']]), {'key': ['val']})
         self.assertEqual(accumulate_items(((k, v) for k, v in [(0, 1)])), {0: [1]})
 
         # Test with items containing single key/val, reducing each
         self.assertEqual(accumulate_items({(None, None)}, reduce_each=True), {None: None})
-        self.assertEqual(accumulate_items([(EMPTY_BIN, EMPTY_STR)], reduce_each=True), {EMPTY_BIN: EMPTY_STR})
-        self.assertEqual(accumulate_items(([EMPTY_STR, EMPTY_BIN],), reduce_each=True), {EMPTY_STR: EMPTY_BIN})
+        self.assertEqual(accumulate_items([(b'', '')], reduce_each=True), {b'': ''})
+        self.assertEqual(accumulate_items((['', b''],), reduce_each=True), {'': b''})
         self.assertEqual(accumulate_items(((k, v) for k, v in [['key', 'val']]), reduce_each=True), {'key': 'val'})
         self.assertEqual(accumulate_items(((k, v) for k, v in [(0, 1)]), reduce_each=True), {0: 1})
 
@@ -80,15 +78,15 @@ class DictsTestCase(unittest.TestCase):
 
         # Test with invalid dict and empty defaults
         self.assertEqual(setdefaults(None, None), None)
-        self.assertEqual(setdefaults(EMPTY_BIN, None), EMPTY_BIN)
-        self.assertEqual(setdefaults(EMPTY_STR, None), EMPTY_STR)
+        self.assertEqual(setdefaults(b'', None), b'')
+        self.assertEqual(setdefaults('', None), '')
         self.assertEqual(setdefaults({}, None), {})
         self.assertEqual([x for x in setdefaults((c for c in 'abc'), None)], [c for c in 'abc'])
 
         # Test with invalid dict and valid defaults
         self.assertEqual(setdefaults(None, 'x'), None)
-        self.assertEqual(setdefaults(EMPTY_BIN, 'y'), EMPTY_BIN)
-        self.assertEqual(setdefaults(EMPTY_STR, 'z'), EMPTY_STR)
+        self.assertEqual(setdefaults(b'', 'y'), b'')
+        self.assertEqual(setdefaults('', 'z'), '')
         self.assertEqual([x for x in setdefaults((c for c in 'abc'), 'xyz')], [c for c in 'abc'])
 
         # Test with empty dict and valid defaults
@@ -290,10 +288,10 @@ class ListTupleSetTestCase(unittest.TestCase):
         self.assertEqual(filter_empty(None, 'None'), 'None')
 
         # Test empty string case: nothing to filter but default applies
-        self.assertEqual(filter_empty(EMPTY_BIN), None)
-        self.assertEqual(filter_empty(EMPTY_BIN, 'None'), 'None')
-        self.assertEqual(filter_empty(EMPTY_STR), None)
-        self.assertEqual(filter_empty(EMPTY_STR, 'None'), 'None')
+        self.assertEqual(filter_empty(b''), None)
+        self.assertEqual(filter_empty(b'', 'None'), 'None')
+        self.assertEqual(filter_empty(''), None)
+        self.assertEqual(filter_empty('', 'None'), 'None')
 
         # Test empty collections case: nothing to filter but default applies
         self.assertEqual(filter_empty(list()), None)
@@ -328,22 +326,22 @@ class ListTupleSetTestCase(unittest.TestCase):
         self.assertEqual(filter_empty([None]), None)
         self.assertEqual(filter_empty({None}), None)
         self.assertEqual(filter_empty((None,)), None)
-        self.assertEqual(filter_empty([EMPTY_BIN]), None)
-        self.assertEqual(filter_empty({EMPTY_BIN}), None)
-        self.assertEqual(filter_empty((EMPTY_BIN,)), None)
-        self.assertEqual(filter_empty([EMPTY_STR]), None)
-        self.assertEqual(filter_empty({EMPTY_STR}), None)
-        self.assertEqual(filter_empty((EMPTY_STR,)), None)
-        self.assertEqual(filter_empty(x for x in (None, EMPTY_BIN, EMPTY_STR)), None)
-        self.assertEqual(filter_empty((x for x in (None, EMPTY_BIN, EMPTY_STR))), None)
+        self.assertEqual(filter_empty([b'']), None)
+        self.assertEqual(filter_empty({b''}), None)
+        self.assertEqual(filter_empty((b'',)), None)
+        self.assertEqual(filter_empty(['']), None)
+        self.assertEqual(filter_empty({''}), None)
+        self.assertEqual(filter_empty(('',)), None)
+        self.assertEqual(filter_empty(x for x in (None, b'', '')), None)
+        self.assertEqual(filter_empty((x for x in (None, b'', ''))), None)
 
         # Test with filterable values and defaults
-        self.assertEqual(filter_empty([None, EMPTY_BIN, EMPTY_STR], {}), {})
-        self.assertEqual(filter_empty({EMPTY_BIN, None, EMPTY_STR}, []), [])
-        self.assertEqual(filter_empty((EMPTY_BIN, EMPTY_STR, None), []), [])
+        self.assertEqual(filter_empty([None, b'', ''], {}), {})
+        self.assertEqual(filter_empty({b'', None, ''}, []), [])
+        self.assertEqual(filter_empty((b'', '', None), []), [])
         self.assertEqual(filter_empty([list(), set(), tuple(), dict()], {}), {})
         self.assertEqual(filter_empty((tuple(), dict(), list(), set()), []), [])
-        self.assertEqual(filter_empty(x for x in (None, EMPTY_BIN, EMPTY_STR)), None)
+        self.assertEqual(filter_empty(x for x in (None, b'', '')), None)
         self.assertEqual(filter_empty((x for x in (tuple(), dict(), list(), set())), {}), {})
 
         # Test with values that should not be filtered
@@ -356,10 +354,10 @@ class ListTupleSetTestCase(unittest.TestCase):
         self.assertEqual(filter_empty((c for c in '1')), ['1'])
 
         # Test with combinations of values
-        self.assertEqual(filter_empty([None, 0, EMPTY_STR, 1]), [0, 1])
-        self.assertEqual(filter_empty(['a', None, 'b', EMPTY_BIN, 'c']), ['a', 'b', 'c'])
-        self.assertEqual(filter_empty({None, EMPTY_STR, 'a', 'b', 'c'}), {'a', 'b', 'c'})
-        self.assertEqual(filter_empty(('a', 'b', None, 'c', EMPTY_BIN)), ('a', 'b', 'c'))
+        self.assertEqual(filter_empty([None, 0, '', 1]), [0, 1])
+        self.assertEqual(filter_empty(['a', None, 'b', b'', 'c']), ['a', 'b', 'c'])
+        self.assertEqual(filter_empty({None, '', 'a', 'b', 'c'}), {'a', 'b', 'c'})
+        self.assertEqual(filter_empty(('a', 'b', None, 'c', b'')), ('a', 'b', 'c'))
         self.assertEqual(filter_empty(t for t in ('a', 'b', tuple(), 'c', set())), ['a', 'b', 'c'])
         self.assertEqual(filter_empty((t for t in ('a', 'b', 'c', set(), list()))), ['a', 'b', 'c'])
 
@@ -376,10 +374,10 @@ class ListTupleSetTestCase(unittest.TestCase):
         self.assertEqual(flatten_items(None, True), None)
 
         # Test empty string case: nothing to filter but default applies
-        self.assertEqual(flatten_items(EMPTY_BIN), EMPTY_BIN)
-        self.assertEqual(flatten_items(EMPTY_BIN, True), EMPTY_BIN)
-        self.assertEqual(flatten_items(EMPTY_STR), EMPTY_STR)
-        self.assertEqual(flatten_items(EMPTY_STR, True), EMPTY_STR)
+        self.assertEqual(flatten_items(b''), b'')
+        self.assertEqual(flatten_items(b'', True), b'')
+        self.assertEqual(flatten_items(''), '')
+        self.assertEqual(flatten_items('', True), '')
         self.assertEqual(flatten_items(dict()), dict())
         self.assertEqual(flatten_items(dict(), True), dict())
 
@@ -410,7 +408,7 @@ class ListTupleSetTestCase(unittest.TestCase):
         self.assertEqual(flatten_items({'b': 'bbb', 'c': 'ccc'}, True), {'b': 'bbb', 'c': 'ccc'})
 
         # Test with single value collections with nothing to flatten, without defaults
-        for flat in (None, EMPTY_BIN, EMPTY_STR, 'abc', 0, 1, True, False):
+        for flat in (None, b'', '', 'abc', 0, 1, True, False):
             self.assertEqual(flatten_items([flat]), [flat])
             self.assertEqual(flatten_items([flat], True), [flat])
 
@@ -423,7 +421,7 @@ class ListTupleSetTestCase(unittest.TestCase):
             self.assertEqual(flatten_items((f for f in (flat,)), True), [flat])
 
         # Test with multiple values with nothing to flatten
-        for flat in ([None, EMPTY_BIN, EMPTY_STR], (False, True, 0, 1, 'a'), {'False', 'True', '0', '1', 'a'}):
+        for flat in ([None, b'', ''], (False, True, 0, 1, 'a'), {'False', 'True', '0', '1', 'a'}):
             for flat_type in (list, tuple, set):
                 flat_in = flat_type(flat)
                 flat_out = flat_in
@@ -473,8 +471,8 @@ class ListTupleSetTestCase(unittest.TestCase):
 
         # Test with non-iterable values
         self.assertEqual(remove_duplicates(None), None)
-        self.assertEqual(remove_duplicates(EMPTY_BIN), EMPTY_BIN)
-        self.assertEqual(remove_duplicates(EMPTY_STR), EMPTY_STR)
+        self.assertEqual(remove_duplicates(b''), b'')
+        self.assertEqual(remove_duplicates(''), '')
         self.assertEqual(remove_duplicates(0), 0)
         self.assertEqual(remove_duplicates(1), 1)
         self.assertEqual(remove_duplicates(False), False)
@@ -576,10 +574,10 @@ class ListTupleSetTestCase(unittest.TestCase):
 
         # Test empty cases: nothing to find
         self.assertEqual(rfind(None, 'x'), -1)
-        self.assertEqual(rfind(EMPTY_BIN, 'x'), -1)
-        self.assertEqual(rfind(EMPTY_BIN, b'x'), -1)
-        self.assertEqual(rfind(EMPTY_STR, 'x'), -1)
-        self.assertEqual(rfind(EMPTY_STR, b'x'), -1)
+        self.assertEqual(rfind(b'', 'x'), -1)
+        self.assertEqual(rfind(b'', b'x'), -1)
+        self.assertEqual(rfind('', 'x'), -1)
+        self.assertEqual(rfind('', b'x'), -1)
         self.assertEqual(rfind(list(), 'x'), -1)
         self.assertEqual(rfind(tuple(), 'x'), -1)
         self.assertEqual(rfind(set(), 'x'), -1)
@@ -637,7 +635,7 @@ class ListTupleSetTestCase(unittest.TestCase):
         """ Tests rindex with general inputs """
 
         # Test valid empty cases: raise ValueError
-        for empty in (EMPTY_BIN, EMPTY_STR, list(), tuple()):
+        for empty in (b'', '', list(), tuple()):
             with self.assertRaises(ValueError):
                 rindex(empty, b'x')
             with self.assertRaises(ValueError):
@@ -705,21 +703,21 @@ class ListTupleSetTestCase(unittest.TestCase):
         """ Tests reduce_value with general inputs """
 
         # Test None case: nothing to reduce but default applies
-        self.assertEqual(reduce_value(None), EMPTY_STR)
+        self.assertEqual(reduce_value(None), '')
         self.assertEqual(reduce_value(None, 'None'), 'None')
 
         # Test empty string case: nothing to reduce but default applies
-        self.assertEqual(reduce_value(EMPTY_BIN), EMPTY_STR)
-        self.assertEqual(reduce_value(EMPTY_BIN, 'None'), 'None')
-        self.assertEqual(reduce_value(EMPTY_STR), EMPTY_STR)
-        self.assertEqual(reduce_value(EMPTY_STR, 'None'), 'None')
+        self.assertEqual(reduce_value(b''), '')
+        self.assertEqual(reduce_value(b'', 'None'), 'None')
+        self.assertEqual(reduce_value(''), '')
+        self.assertEqual(reduce_value('', 'None'), 'None')
 
         # Test empty collections case: nothing to reduce but default applies
-        self.assertEqual(reduce_value(list()), EMPTY_STR)
+        self.assertEqual(reduce_value(list()), '')
         self.assertEqual(reduce_value(list(), 'None'), 'None')
-        self.assertEqual(reduce_value(set()), EMPTY_STR)
+        self.assertEqual(reduce_value(set()), '')
         self.assertEqual(reduce_value(set(), 'None'), 'None')
-        self.assertEqual(reduce_value(tuple()), EMPTY_STR)
+        self.assertEqual(reduce_value(tuple()), '')
         self.assertEqual(reduce_value(tuple(), 'None'), 'None')
 
         # Test when there's nothing to reduce
@@ -738,8 +736,8 @@ class ListTupleSetTestCase(unittest.TestCase):
 
         # Test with reducible values
         self.assertEqual(reduce_value([None]), None)
-        self.assertEqual(reduce_value([EMPTY_BIN]), EMPTY_BIN)
-        self.assertEqual(reduce_value([EMPTY_STR]), EMPTY_STR)
+        self.assertEqual(reduce_value([b'']), b'')
+        self.assertEqual(reduce_value(['']), '')
         self.assertEqual(reduce_value([0]), 0)
         self.assertEqual(reduce_value([1]), 1)
         self.assertEqual(reduce_value(['x']), 'x')
@@ -748,7 +746,7 @@ class ListTupleSetTestCase(unittest.TestCase):
 
         # Test with non-reducible values
         self.assertEqual(reduce_value([None, None]), [None, None])
-        self.assertEqual(reduce_value([EMPTY_BIN, EMPTY_STR]), [EMPTY_BIN, EMPTY_STR])
+        self.assertEqual(reduce_value([b'', '']), [b'', ''])
         self.assertEqual(reduce_value([0, 0]), [0, 0])
         self.assertEqual(reduce_value([1, 1]), [1, 1])
         self.assertEqual(reduce_value(['a', 'b', 'c']), ['a', 'b', 'c'])
@@ -764,8 +762,8 @@ class ListTupleSetTestCase(unittest.TestCase):
 
         # Test when there's nothing to wrap
         self.assertEqual(wrap_value(None), [])
-        self.assertEqual(wrap_value(EMPTY_BIN), [])
-        self.assertEqual(wrap_value(EMPTY_STR), [])
+        self.assertEqual(wrap_value(b''), [])
+        self.assertEqual(wrap_value(''), [])
 
         # Test with wrappable values
         self.assertEqual(wrap_value(0), [0])
@@ -790,17 +788,17 @@ class ListTupleSetTestCase(unittest.TestCase):
 
         # Test with non-empty collections, filtering out empty
         self.assertEqual(wrap_value([None]), [])
-        self.assertEqual(wrap_value([EMPTY_BIN]), [])
-        self.assertEqual(wrap_value([EMPTY_STR]), [])
+        self.assertEqual(wrap_value([b'']), [])
+        self.assertEqual(wrap_value(['']), [])
         self.assertEqual(wrap_value([None, None]), [])
-        self.assertEqual(wrap_value([EMPTY_BIN, EMPTY_STR]), [])
+        self.assertEqual(wrap_value([b'', '']), [])
 
         # Test with non-empty collections, preserving empty
         self.assertEqual(wrap_value([None], include_empty=True), [None])
-        self.assertEqual(wrap_value([EMPTY_BIN], include_empty=True), [EMPTY_BIN])
-        self.assertEqual(wrap_value([EMPTY_STR], include_empty=True), [EMPTY_STR])
+        self.assertEqual(wrap_value([b''], include_empty=True), [b''])
+        self.assertEqual(wrap_value([''], include_empty=True), [''])
         self.assertEqual(wrap_value([None, None], include_empty=True), [None, None])
-        self.assertEqual(wrap_value([EMPTY_BIN, EMPTY_STR], include_empty=True), [EMPTY_BIN, EMPTY_STR])
+        self.assertEqual(wrap_value([b'', ''], include_empty=True), [b'', ''])
 
         # Test with non-empty collections
         self.assertEqual(wrap_value([0, 1, 2]), [0, 1, 2])

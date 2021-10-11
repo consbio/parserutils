@@ -8,6 +8,7 @@ def is_number(num, if_bool=False):
         return if_bool
     elif isinstance(num, int):
         return True
+
     try:
         number = float(num)
         return not (isnan(number) or isinf(number))

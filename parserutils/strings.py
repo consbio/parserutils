@@ -1,34 +1,19 @@
 import re
-import six
 import string
 import unicodedata
 
 
-binary_type = getattr(six, 'binary_type')
-six_moves = getattr(six, 'moves')
-string_types = getattr(six, 'string_types')
-text_type = getattr(six, 'text_type')
-xrange = getattr(six_moves, 'xrange')
-
-
 ALPHANUMERIC = set(string.ascii_letters + string.digits)
 PUNCTUATION = set(string.punctuation)
+STRING_TYPES = (bytes, str)
 
 DEFAULT_ENCODING = 'UTF-8'
 
-EMPTY_BIN = binary_type()
-EMPTY_STR = text_type()
-
-# Reduce types to minimum possible (in Python 2 there are duplicates)
-STRING_TYPE = string_types[0]
-STRING_TYPES = tuple(t for t in {binary_type, STRING_TYPE})
-
+_TO_CAMEL_REGEX = re.compile(r'_+([a-zA-Z0-9])')
 _TO_SNAKE_REGEX_1 = re.compile(r'(.)([A-Z][a-z]+)')
 _TO_SNAKE_REGEX_2 = re.compile(r'([a-z0-9])([A-Z])')
 _TO_SNAKE_REGEX_3 = re.compile(r'[_]{2,}')
 _TO_SNAKE_PATTERN = r'\1_\2'
-
-_TO_CAMEL_REGEX = re.compile(r'_+([a-zA-Z0-9])')
 
 
 def camel_to_constant(s):
@@ -141,20 +126,20 @@ def splitany(s, sep=None, maxsplit=-1):
         raise TypeError('Cannot split a {t}: {s}'.format(s=s, t=type(s).__name__))
     elif sep is None:
         return s.split(sep, maxsplit)
-    elif not isinstance(sep, _split_sep_types):
+    elif not isinstance(sep, (bytes, list, str, tuple)):
         raise TypeError('Cannot split on a {t}: {s}'.format(s=sep, t=type(sep).__name__))
     else:
         split_on_any_char = isinstance(sep, STRING_TYPES)
 
         if split_on_any_char:
-            # Python 3 compliance: sync and wrap to prevent issues with Binary: b'a'[0] == 97
+            # Sync and wrap to prevent issues with Binary: b'a'[0] == 97
             seps = [_sync_string_to(s, sep)]
         elif all(isinstance(sub, STRING_TYPES) for sub in sep):
-            # Python 3 compliance: sync, but also sort keys by length to do largest matches first
+            # Sync, but also sort keys by length to do largest matches first
             seps = [_sync_string_to(s, sub) for sub in sep]
         else:
             invalid_seps = [sub for sub in sep if not isinstance(sep, STRING_TYPES)]
-            raise TypeError('Cannot split on the following: {s}'.format(s=invalid_seps))
+            raise TypeError(f'Cannot split on the following: {invalid_seps}')
 
     if len(s) == 0 or len(seps) == 0 or maxsplit == 0:
         return [s]
@@ -167,7 +152,7 @@ def splitany(s, sep=None, maxsplit=-1):
         if not split_on_any_char or len(seps) == 1:
             return s.split(seps, maxsplit)
 
-    as_text = isinstance(seps, _split_txt_types)
+    as_text = isinstance(seps, (list, str, tuple))
     parts = []
     start = 0
     rest = None
@@ -180,7 +165,7 @@ def splitany(s, sep=None, maxsplit=-1):
             if as_text:
                 stop = min((rest.index(sub), 0 - len(sub)) for sub in seps if sub in rest)
             else:
-                # Python 3 compliance: iterating over bytes results in ints
+                # Iterating over bytes results in int values
                 stop = min((rest.index(sub), 0 - len(bytes([sub]))) for sub in seps if sub in rest)
 
             parts.append(rest if maxsplit == len(parts) else rest[:stop[0]])
@@ -192,16 +177,12 @@ def splitany(s, sep=None, maxsplit=-1):
     return parts
 
 
-_split_sep_types = STRING_TYPES + (list, tuple)
-_split_txt_types = (STRING_TYPE, list, tuple)
-
-
 def _sync_string_to(bin_or_str, string):
-    """ Python 3 compliance: ensure two strings are the same type (unicode or binary) """
+    """ Ensure two unicode or binary strings are the same type """
 
     if isinstance(string, type(bin_or_str)):
         return string
-    elif isinstance(string, binary_type):
+    elif isinstance(string, bytes):
         return string.decode(DEFAULT_ENCODING)
     else:
         return string.encode(DEFAULT_ENCODING)
@@ -212,13 +193,13 @@ def to_ascii_equivalent(text):
 
     if text is None:
         return None
-    elif isinstance(text, binary_type):
+    elif isinstance(text, bytes):
         text = text.decode(DEFAULT_ENCODING)
-    elif not isinstance(text, text_type):
-        text = text_type(text)
+    elif not isinstance(text, str):
+        text = str(text)
 
-    text = EMPTY_STR.join(_ASCII_PUNCTUATION_MAP.get(c, c) for c in text)
-    return EMPTY_STR.join(c for c in unicodedata.normalize('NFD', text) if unicodedata.category(c) != 'Mn')
+    text = ''.join(_ASCII_PUNCTUATION_MAP.get(c, c) for c in text)
+    return ''.join(c for c in unicodedata.normalize('NFD', text) if unicodedata.category(c) != 'Mn')
 
 
 _ASCII_PUNCTUATION_MAP = {

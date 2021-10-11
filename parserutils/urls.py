@@ -1,24 +1,4 @@
-import six
-
-try:
-    from urllib.parse import clear_cache as _clear_cache
-except ImportError:
-    from urlparse import clear_cache as _clear_cache
-
-
-_six_moves = getattr(six, 'moves')
-_urllib_parse = getattr(_six_moves, 'urllib_parse')
-
-_parse_qs = _urllib_parse.parse_qs
-_unquote = _urllib_parse.unquote
-_urlencode = _urllib_parse.urlencode
-_urlsplit = _urllib_parse.urlsplit
-_urlunsplit = _urllib_parse.urlunsplit
-
-
-def clear_cache():
-    """ Clear the urllib parse cache """
-    _clear_cache()
+from urllib.parse import SplitResult, parse_qs, unquote, urlencode, urlsplit, urlunsplit
 
 
 def get_base_url(url, include_path=False):
@@ -27,8 +7,8 @@ def get_base_url(url, include_path=False):
     if not url:
         return None
 
-    parts = _urlsplit(url)
-    base_url = _urlunsplit((
+    parts = urlsplit(url)
+    base_url = urlunsplit((
         parts.scheme, parts.netloc, (parts.path if include_path else ''), None, None
     ))
 
@@ -51,15 +31,15 @@ def update_url_params(url, replace_all=False, **url_params):
     if not url or not url_params:
         return url or None
 
-    scheme, netloc, url_path, url_query, fragment = _urlsplit(url)
+    scheme, netloc, url_path, url_query, fragment = urlsplit(url)
 
     if replace_all is True:
         url_query = url_params
     else:
-        url_query = _parse_qs(url_query)
+        url_query = parse_qs(url_query)
         url_query.update(url_params)
 
-    return _urlunsplit((scheme, netloc, url_path, _unquote(_urlencode(url_query, doseq=True)), fragment))
+    return urlunsplit((scheme, netloc, url_path, unquote(urlencode(url_query, doseq=True)), fragment))
 
 
 def url_to_parts(url):
@@ -68,7 +48,7 @@ def url_to_parts(url):
     if not url:
         return None
 
-    scheme, netloc, path, query, fragment = _urlsplit(url)
+    scheme, netloc, path, query, fragment = urlsplit(url)
 
     if not path or path == '/':
         path = []
@@ -78,9 +58,9 @@ def url_to_parts(url):
     if not query:
         query = {}
     else:
-        query = _parse_qs(query)
+        query = parse_qs(query)
 
-    return _urllib_parse.SplitResult(scheme, netloc, path, query, fragment)
+    return SplitResult(scheme, netloc, path, query, fragment)
 
 
 def parts_to_url(parts=None, scheme=None, netloc=None, path=None, query=None, fragment=None, trailing_slash=None):
@@ -91,7 +71,7 @@ def parts_to_url(parts=None, scheme=None, netloc=None, path=None, query=None, fr
     :param trailing_slash: if True, add a slash after path; if False, remove it; otherwise, leave it as is
     """
 
-    if isinstance(parts, _urllib_parse.SplitResult):
+    if isinstance(parts, SplitResult):
         scheme, netloc, path, query, fragment = parts
     elif parts and isinstance(parts, dict):
         scheme = parts.get('scheme', 'http')
@@ -111,6 +91,6 @@ def parts_to_url(parts=None, scheme=None, netloc=None, path=None, query=None, fr
             path = path.rstrip('/')
 
     if isinstance(query, (dict, tuple)):
-        query = _unquote(_urlencode(query, doseq=True))
+        query = unquote(urlencode(query, doseq=True))
 
-    return _urlunsplit((scheme, netloc, path, query, fragment)) or None
+    return urlunsplit((scheme, netloc, path, query, fragment)) or None

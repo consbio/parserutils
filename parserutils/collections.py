@@ -1,12 +1,9 @@
-import six
-
 from _collections import defaultdict
 
-from parserutils.strings import DEFAULT_ENCODING, EMPTY_BIN, EMPTY_STR, STRING_TYPES
+from .strings import DEFAULT_ENCODING, STRING_TYPES
 
 
-iteritems = getattr(six, 'iteritems')
-string_types = getattr(six, 'string_types')
+_BASE_VALUE_TYPES = (dict,) + STRING_TYPES
 
 
 # DICT FUNCTIONS #
@@ -25,7 +22,7 @@ def accumulate_items(items, reduce_each=False):
     if not reduce_each:
         return accumulated
     else:
-        return {k: reduce_value(v, v) for k, v in iteritems(accumulated)}
+        return {k: reduce_value(v, v) for k, v in accumulated.items()}
 
 
 def setdefaults(d, defaults):
@@ -41,8 +38,8 @@ def setdefaults(d, defaults):
 
     if not isinstance(d, dict) or defaults is None:
         return d
-    elif isinstance(defaults, _wrap_types):
-        return setdefaults(d, [defaults])  # Wrap in list for consistent behavior
+    elif isinstance(defaults, _BASE_VALUE_TYPES):
+        defaults = [defaults]
 
     use_none = not any(isinstance(s, dict) for s in defaults)
 
@@ -56,7 +53,7 @@ def setdefaults(d, defaults):
 
     # Update d with accumulated pairs, handling further nested dot-notated keys
 
-    for current, remaining in iteritems(accumulated):
+    for current, remaining in accumulated.items():
         if use_none:
 
             # Apply None value for what remains of the dot notated key
@@ -95,8 +92,8 @@ def _to_key_val_pairs(defs):
 
         # Convert collections of strings or lists as above; break dicts into component items
         pairs.extend(p for s in defs if isinstance(s, STRING_TYPES) for p in _to_key_val_pairs(s))
-        pairs.extend(p for l in defs if isinstance(l, list) for p in _to_key_val_pairs(l))
-        pairs.extend(p for d in defs if isinstance(d, dict) for p in iteritems(d))
+        pairs.extend(p for l in defs if isinstance(l, (list, tuple)) for p in _to_key_val_pairs(l))
+        pairs.extend(p for d in defs if isinstance(d, dict) for p in d.items())
 
         return pairs
 
@@ -114,18 +111,14 @@ def filter_empty(values, default=None):
         return default
     elif hasattr(values, '__len__') and len(values) == 0:
         return default
-    elif hasattr(values, '__iter__') and not isinstance(values, _filtered_types):
-        filtered = type(values) if isinstance(values, _filter_types) else list
+    elif hasattr(values, '__iter__') and not isinstance(values, _BASE_VALUE_TYPES):
+        filtered = type(values) if isinstance(values, (set, tuple)) else list
         values = filtered(
             v for v in values if not (v is None or (hasattr(v, '__len__') and len(v) == 0))
         )
         return default if len(values) == 0 else values
 
     return values
-
-
-_filter_types = (list, tuple, set)
-_filtered_types = (dict,) + STRING_TYPES
 
 
 def flatten_items(items, recurse=False):
@@ -139,21 +132,17 @@ def flatten_items(items, recurse=False):
         return items
     elif not hasattr(items, '__iter__'):
         return items
-    elif isinstance(items, _flattened_types):
+    elif isinstance(items, _BASE_VALUE_TYPES):
         return items
 
     flattened = []
     for item in items:
-        if item and hasattr(item, '__iter__') and not isinstance(item, _flattened_types):
+        if item and hasattr(item, '__iter__') and not isinstance(item, _BASE_VALUE_TYPES):
             flattened.extend(flatten_items(item, True) if recurse else item)
         else:
             flattened.append(item)
 
-    return type(items)(flattened) if isinstance(items, _flatten_types) else flattened
-
-
-_flatten_types = (tuple, set)
-_flattened_types = (dict,) + STRING_TYPES
+    return type(items)(flattened) if isinstance(items, (set, tuple)) else flattened
 
 
 def remove_duplicates(items, in_reverse=False, is_unhashable=False):
@@ -167,10 +156,10 @@ def remove_duplicates(items, in_reverse=False, is_unhashable=False):
 
     if not items:
         return items
-    elif isinstance(items, _removed_dup_types):
-        return items
+    elif isinstance(items, (dict, set)):
+        return items  # Already reduced by definition
     elif not hasattr(items, '__iter__') and not hasattr(items, '__getitem__'):
-        return items
+        return items  # Only bytes, str, list, tuple, generator or custom collections beyond this
 
     _items = items
     if in_reverse:
@@ -178,25 +167,21 @@ def remove_duplicates(items, in_reverse=False, is_unhashable=False):
         _items = items[::-1] if subscriptable else reversed([i for i in items])
 
     is_unhashable &= not isinstance(items, STRING_TYPES)
-    buffer = list() if is_unhashable else set()
+    buffer = [] if is_unhashable else set()
     append = buffer.append if is_unhashable else buffer.add
 
-    if not isinstance(items, _remove_dup_types):
-        # The fastest case: handles lists (33% of other cases) and generators (25%)
+    if not isinstance(items, (bytes, str, tuple)):
+        # The fastest case: lists are 33% faster than other cases, generators 25%
         unique = [i for i in _items if i not in buffer and not append(i)]
     elif isinstance(items, tuple):
         unique = tuple(i for i in _items if i not in buffer and not append(i))
-    elif isinstance(items, string_types):
-        unique = EMPTY_STR.join(i for i in _items if i not in buffer and not append(i))
+    elif isinstance(items, str):
+        unique = ''.join(i for i in _items if i not in buffer and not append(i))
     else:
-        # Python 3 compliance: for bytearrays, convert integers back to bytes during iteration
-        unique = EMPTY_BIN.join(bytes([i]) for i in _items if i not in buffer and not append(i))
+        # For byte arrays, convert integers back to bytes during iteration
+        unique = b''.join(bytes([i]) for i in _items if i not in buffer and not append(i))
 
     return unique if not in_reverse else unique[::-1]  # Restore original order
-
-
-_remove_dup_types = (tuple,) + STRING_TYPES
-_removed_dup_types = (dict, set)
 
 
 def rfind(values, value):
@@ -206,7 +191,7 @@ def rfind(values, value):
         try:
             return values.rfind(value)
         except TypeError:
-            # Python 3 compliance: search for str values in bytearray
+            # Search for str values in byte array
             return values.rfind(type(values)(value, DEFAULT_ENCODING))
     else:
         try:
@@ -222,13 +207,13 @@ def rindex(values, value):
         try:
             return values.rindex(value)
         except TypeError:
-            # Python 3 compliance: search for str values in bytearray
+            # Search for str values in byte array
             return values.rindex(type(values)(value, DEFAULT_ENCODING))
     else:
         return len(values) - 1 - values[::-1].index(value)
 
 
-def reduce_value(value, default=EMPTY_STR):
+def reduce_value(value, default=''):
     """
     :return: a single value from lists, tuples or sets with one item;
     otherwise, the value itself if not empty or the default if it is.
@@ -242,13 +227,10 @@ def reduce_value(value, default=EMPTY_STR):
         elif vlen == 1:
             if isinstance(value, set):
                 return value.pop()
-            elif isinstance(value, _reduce_types):
+            elif isinstance(value, (list, tuple)):
                 return value[0]
 
     return default if value is None else value
-
-
-_reduce_types = (list, tuple)
 
 
 def wrap_value(value, include_empty=False):
@@ -261,12 +243,9 @@ def wrap_value(value, include_empty=False):
         return [None] if include_empty else []
     elif hasattr(value, '__len__') and len(value) == 0:
         return [value] if include_empty else []
-    elif isinstance(value, _wrap_types):
+    elif isinstance(value, _BASE_VALUE_TYPES):
         return [value]
     elif not hasattr(value, '__iter__'):
         return [value]
 
     return value if include_empty else filter_empty(value, [])
-
-
-_wrap_types = (dict,) + STRING_TYPES

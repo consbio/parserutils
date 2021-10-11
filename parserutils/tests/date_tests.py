@@ -1,13 +1,7 @@
 import datetime
-import six
 import unittest
 
-from parserutils.dates import parse_dates
-from parserutils.strings import EMPTY_BIN, EMPTY_STR
-
-
-binary_type = getattr(six, 'binary_type')
-text_type = getattr(six, 'text_type')
+from ..dates import parse_dates
 
 
 class DateTestCase(unittest.TestCase):
@@ -20,10 +14,8 @@ class DateTestCase(unittest.TestCase):
 
         anonymous_obj = type('Anonymous', (), {})
         already_dates = (today, now)
-        invalid_dates = (None, EMPTY_BIN, EMPTY_STR, 'not a date', anonymous_obj)
-        parsing_dates = (
-            0, 1.1, binary_type('2'.encode()), text_type('3'), binary_type('4.4'.encode()), text_type('5.5')
-        )
+        invalid_dates = (None, b'', '', 'not a date', anonymous_obj)
+        parsing_dates = (0, 1.1, b'2', '3', b'4.4', '5.5')
 
         # Test values that should come back unchanged
         for val in already_dates:

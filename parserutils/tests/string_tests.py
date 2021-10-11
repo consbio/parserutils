@@ -1,8 +1,8 @@
 import unittest
 
-from parserutils.strings import _ASCII_PUNCTUATION_MAP, ALPHANUMERIC, EMPTY_BIN, EMPTY_STR
-from parserutils.strings import camel_to_constant, camel_to_snake, constant_to_camel, snake_to_camel
-from parserutils.strings import find_all, splitany, to_ascii_equivalent
+from ..strings import _ASCII_PUNCTUATION_MAP, ALPHANUMERIC
+from ..strings import camel_to_constant, camel_to_snake, constant_to_camel, snake_to_camel
+from ..strings import find_all, splitany, to_ascii_equivalent
 
 
 class StringCasingTestCase(unittest.TestCase):
@@ -11,8 +11,8 @@ class StringCasingTestCase(unittest.TestCase):
         """ Tests camel_to_constant with general inputs """
 
         self.assertEqual(camel_to_constant(None), None)
-        self.assertEqual(camel_to_constant(EMPTY_BIN), EMPTY_BIN)
-        self.assertEqual(camel_to_constant(EMPTY_STR), EMPTY_STR)
+        self.assertEqual(camel_to_constant(b''), b'')
+        self.assertEqual(camel_to_constant(''), '')
         self.assertEqual(camel_to_constant('123'), '123')
         self.assertEqual(camel_to_constant('test'), 'TEST')
         self.assertEqual(camel_to_constant('TEST'), 'TEST')
@@ -32,8 +32,8 @@ class StringCasingTestCase(unittest.TestCase):
         """ Tests camel_to_snake with general inputs """
 
         self.assertEqual(camel_to_snake(None), None)
-        self.assertEqual(camel_to_snake(EMPTY_BIN), EMPTY_BIN)
-        self.assertEqual(camel_to_snake(EMPTY_STR), EMPTY_STR)
+        self.assertEqual(camel_to_snake(b''), b'')
+        self.assertEqual(camel_to_snake(''), '')
         self.assertEqual(camel_to_snake('123'), '123')
         self.assertEqual(camel_to_snake('test'), 'test')
         self.assertEqual(camel_to_snake('TEST'), 'test')
@@ -53,7 +53,7 @@ class StringCasingTestCase(unittest.TestCase):
         """ Tests camel_to_snake and back """
 
         values = (
-            None, EMPTY_BIN, EMPTY_STR,
+            None, b'', '',
             '123', 'test', 'abcDef', 'aBcDef', 'abcDefGhi',
             'one1Two2Three3', '1One2Two3Three', '11Twelve13Fourteen15'
         )
@@ -64,8 +64,8 @@ class StringCasingTestCase(unittest.TestCase):
         """ Tests constant_to_camel with general inputs """
 
         self.assertEqual(constant_to_camel(None), None)
-        self.assertEqual(constant_to_camel(EMPTY_BIN), EMPTY_BIN)
-        self.assertEqual(constant_to_camel(EMPTY_STR), EMPTY_STR)
+        self.assertEqual(constant_to_camel(b''), b'')
+        self.assertEqual(constant_to_camel(''), '')
         self.assertEqual(constant_to_camel('123'), '123')
         self.assertEqual(constant_to_camel('test'), 'test')
         self.assertEqual(constant_to_camel('TEST'), 'test')
@@ -85,8 +85,8 @@ class StringCasingTestCase(unittest.TestCase):
         """ Tests snake_to_camel with general inputs """
 
         self.assertEqual(snake_to_camel(None), None)
-        self.assertEqual(snake_to_camel(EMPTY_BIN), EMPTY_BIN)
-        self.assertEqual(snake_to_camel(EMPTY_STR), EMPTY_STR)
+        self.assertEqual(snake_to_camel(b''), b'')
+        self.assertEqual(snake_to_camel(''), '')
         self.assertEqual(snake_to_camel('123'), '123')
         self.assertEqual(snake_to_camel('test'), 'test')
         self.assertEqual(snake_to_camel('TEST'), 'test')
@@ -106,7 +106,7 @@ class StringCasingTestCase(unittest.TestCase):
         """ Tests snake_to_camel and back """
 
         values = (
-            None, EMPTY_BIN, EMPTY_STR,
+            None, b'', '',
             '123', 'test', 'abc_def', 'a_bc_def', 'abc_def_ghi',
             'one1_two2_three3', '1_one2_two3_three', '11_twelve13_fourteen15'
         )
@@ -121,11 +121,11 @@ class StringConversionTestCase(unittest.TestCase):
 
         # Test valid empty inputs
         self.assertEqual(to_ascii_equivalent(None), None)
-        self.assertEqual(to_ascii_equivalent(EMPTY_BIN), EMPTY_STR)
-        self.assertEqual(to_ascii_equivalent(EMPTY_STR), EMPTY_STR)
+        self.assertEqual(to_ascii_equivalent(b''), '')
+        self.assertEqual(to_ascii_equivalent(''), '')
 
         # Test that ASCII is unchanged
-        alphanumeric = EMPTY_STR.join(ALPHANUMERIC)
+        alphanumeric = ''.join(ALPHANUMERIC)
         self.assertEqual(to_ascii_equivalent(alphanumeric), alphanumeric)
 
         # Test that known issues are handled
@@ -161,14 +161,14 @@ class StringOperationTestCase(unittest.TestCase):
         # Test valid empty inputs
 
         self.assertEqual(find_all(None, None), [])
-        self.assertEqual(find_all(EMPTY_STR, None), [])
-        self.assertEqual(find_all(None, EMPTY_STR), [])
+        self.assertEqual(find_all('', None), [])
+        self.assertEqual(find_all(None, ''), [])
 
-        self.assertEqual(find_all(EMPTY_BIN, EMPTY_BIN), [])
-        self.assertEqual(find_all(EMPTY_BIN, EMPTY_STR), [])
+        self.assertEqual(find_all(b'', b''), [])
+        self.assertEqual(find_all(b'', ''), [])
 
-        self.assertEqual(find_all(EMPTY_STR, EMPTY_BIN), [])
-        self.assertEqual(find_all(EMPTY_STR, EMPTY_STR), [])
+        self.assertEqual(find_all('', b''), [])
+        self.assertEqual(find_all('', ''), [])
 
         # Test with missing or invalid inputs
 
@@ -260,11 +260,11 @@ class StringOperationTestCase(unittest.TestCase):
 
         self.assertEqual(splitany(None, None), [])
 
-        self.assertEqual(splitany(EMPTY_BIN, EMPTY_BIN), [EMPTY_BIN])
-        self.assertEqual(splitany(EMPTY_BIN, EMPTY_STR), [EMPTY_BIN])
+        self.assertEqual(splitany(b'', b''), [b''])
+        self.assertEqual(splitany(b'', ''), [b''])
 
-        self.assertEqual(splitany(EMPTY_STR, EMPTY_BIN), [EMPTY_STR])
-        self.assertEqual(splitany(EMPTY_STR, EMPTY_STR), [EMPTY_STR])
+        self.assertEqual(splitany('', b''), [''])
+        self.assertEqual(splitany('', ''), [''])
 
         # Test invalid strings to split
 

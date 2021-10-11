@@ -4,22 +4,17 @@ Contains an API defining all operations executable against an XML tree
 """
 
 import re
-import six
 import string
 
 from defusedxml.cElementTree import fromstring, tostring
 from defusedxml.cElementTree import iterparse
+from urllib.request import urlopen
 from xml.etree.cElementTree import ElementTree, Element
 from xml.etree.cElementTree import iselement
-from parserutils.strings import DEFAULT_ENCODING, STRING_TYPES
+
+from .strings import DEFAULT_ENCODING, STRING_TYPES
 
 ElementType = type(Element(None))  # Element module doesn't have a type
-
-
-binary_type = getattr(six, 'binary_type')
-iteritems = getattr(six, 'iteritems')
-six_moves = getattr(six, 'moves')
-string_types = getattr(six, 'string_types')
 
 
 XPATH_DELIM = '/'
@@ -183,7 +178,7 @@ def get_element(parent_to_parse, element_path=None):
         return None
     elif not isinstance(parent_to_parse, ElementType):
         element_type = type(parent_to_parse).__name__
-        raise TypeError('Invalid element type: {0}'.format(element_type))
+        raise TypeError(f'Invalid element type: {element_type}')
 
     return parent_to_parse.find(element_path) if element_path else parent_to_parse
 
@@ -202,13 +197,8 @@ def get_remote_element(url, element_path=None):
         with open(url, 'rb') as xml:
             content = xml.read()
     else:
-        try:
-            urllib = getattr(six_moves, 'urllib')
-            remote = urllib.request.urlopen(url)
+        with urlopen(url) as remote:
             content = remote.read()
-        finally:
-            # For Python 2 compliance: fails in `with` block (no `__exit__`)
-            remote.close()
 
     return get_element(strip_namespaces(content), element_path)
 
@@ -230,7 +220,7 @@ def elements_exist(elem_to_parse, element_paths=None, all_exist=False):
     if element is None:
         return False
 
-    if not element_paths or isinstance(element_paths, string_types):
+    if not element_paths or isinstance(element_paths, str):
         return element_exists(element, element_paths)
 
     exists = False
@@ -376,7 +366,7 @@ def remove_elements(parent_to_parse, element_paths, clear_empty=False):
     if element is None or not element_paths:
         return removed
 
-    if isinstance(element_paths, string_types):
+    if isinstance(element_paths, str):
         rem = remove_element(element, element_paths, clear_empty)
         removed.extend(rem if isinstance(rem, list) else [rem])
     else:
@@ -602,11 +592,11 @@ def _get_elements_property(parent_to_parse, element_path, prop_name):
 
     if not element_path:
         texts = getattr(parent_element, prop_name)
-        texts = texts.strip() if isinstance(texts, string_types) else texts
+        texts = texts.strip() if isinstance(texts, str) else texts
         texts = [texts] if texts else []
     else:
         texts = [t for t in (
-            prop.strip() if isinstance(prop, string_types) else prop
+            prop.strip() if isinstance(prop, str) else prop
             for prop in (getattr(node, prop_name) for node in parent_element.findall(element_path)) if prop
         ) if t]
 
@@ -644,7 +634,7 @@ def _set_element_property(parent_to_parse, element_path, prop_name, value):
     if element_path and not element_exists(element, element_path):
         element = insert_element(element, 0, element_path)
 
-    if not isinstance(value, string_types):
+    if not isinstance(value, str):
         value = u''
 
     setattr(element, prop_name, value)
@@ -693,7 +683,7 @@ def _set_elements_property(parent_to_parse, element_path, prop_name, values):
     if element is None or not values:
         return []
 
-    if isinstance(values, string_types):
+    if isinstance(values, str):
         values = [values]
 
     if not element_path:
@@ -733,7 +723,7 @@ def dict_to_element(element_as_dict):
     elif isinstance(element_as_dict, ElementType):
         return element_as_dict
     elif not isinstance(element_as_dict, dict):
-        raise TypeError('Invalid element dict: {0}'.format(element_as_dict))
+        raise TypeError(f'Invalid element dict: {element_as_dict}')
 
     if len(element_as_dict) == 0:
         return None
@@ -751,7 +741,7 @@ def dict_to_element(element_as_dict):
             converted.append(dict_to_element(child))
 
     except KeyError:
-        raise SyntaxError('Invalid element dict: {0}'.format(element_as_dict))
+        raise SyntaxError(f'Invalid element dict: {element_as_dict}')
 
     return converted
 
@@ -804,7 +794,7 @@ def element_to_object(elem_to_parse, element_path=None):
     }}
     """
 
-    if isinstance(elem_to_parse, STRING_TYPES) or hasattr(elem_to_parse, 'read'):
+    if isinstance(elem_to_parse, str) or hasattr(elem_to_parse, 'read'):
         # Always strip namespaces if not already parsed
         elem_to_parse = strip_namespaces(elem_to_parse)
 
@@ -820,22 +810,6 @@ def element_to_object(elem_to_parse, element_path=None):
 
 def _element_to_object(element):
 
-    def _accumulate_items(obj, items, tag=None):
-        """ Add or append non-None key/val pairs in items under each key in obj """
-
-        for key, val in items:
-            # Ensure XML tags don't override or get overridden by object properties
-            obj_key = '_'.join((tag, key)) if tag and key in _OBJ_PROPERTIES else key
-            obj_val = val.strip() if isinstance(val, string_types) else val
-
-            if obj_key not in obj:
-                obj[obj_key] = obj_val
-            elif isinstance(obj[obj_key], list):
-                obj[obj_key].append(obj_val)
-            else:
-                obj[obj_key] = [obj[obj_key]]
-                obj[obj_key].append(obj_val)
-
     obj = {}
     if not isinstance(element, ElementType):
         return obj
@@ -843,12 +817,12 @@ def _element_to_object(element):
     # Populate leaf elements first to reduce cost of recursion stack
 
     children = ((e.tag, _element_to_object(e)) for e in element)
-    _accumulate_items(obj, children)
+    _accumulate_element_values(obj, children)
 
     # Now that all children have been populated, fill out the parent object
 
-    attributes = ((k, v) for k, v in iteritems(element.attrib) if v and v.strip())
-    _accumulate_items(obj, attributes, element.tag)
+    attributes = ((k, v) for k, v in element.attrib.items() if v and v.strip())
+    _accumulate_element_values(obj, attributes, element.tag)
 
     # Add as value a list containing text and tail if both are present, or just the text for one
     text_values = ((text or u'').strip() for text in (element.text, element.tail))
@@ -862,6 +836,23 @@ def _element_to_object(element):
         obj[_OBJ_VALUE] = text_values
 
     return obj
+
+
+def _accumulate_element_values(obj, element_vals, tag=None):
+    """ Add or append non-None key/val pairs in element_vals under each key in obj """
+
+    for key, val in element_vals:
+        # Ensure XML tags don't override or get overridden by object properties
+        obj_key = '_'.join((tag, key)) if tag and key in _OBJ_PROPERTIES else key
+        obj_val = val.strip() if isinstance(val, str) else val
+
+        if obj_key not in obj:
+            obj[obj_key] = obj_val
+        elif isinstance(obj[obj_key], list):
+            obj[obj_key].append(obj_val)
+        else:
+            obj[obj_key] = [obj[obj_key]]
+            obj[obj_key].append(obj_val)
 
 
 def element_to_string(element, include_declaration=True, encoding=DEFAULT_ENCODING, method='xml'):
@@ -894,7 +885,7 @@ def string_to_element(element_as_string, include_namespaces=False):
     else:
         element_as_string = _xml_content_to_string(element_as_string)
 
-    if not isinstance(element_as_string, string_types):
+    if not isinstance(element_as_string, str):
         # Let cElementTree handle the error
         return fromstring(element_as_string)
     elif not strip_xml_declaration(element_as_string):
@@ -960,7 +951,7 @@ def strip_namespaces(file_or_xml):
     """
 
     xml_content = _xml_content_to_string(file_or_xml)
-    if not isinstance(xml_content, string_types):
+    if not isinstance(xml_content, str):
         return xml_content
 
     # This pattern can have overlapping matches, necessitating the loop
@@ -983,26 +974,23 @@ def strip_xml_declaration(file_or_xml):
     """
 
     xml_content = _xml_content_to_string(file_or_xml)
-    if not isinstance(xml_content, string_types):
+    if not isinstance(xml_content, str):
         return xml_content
 
-    # For Python 2 compliance: replacement string must not specify unicode u''
     return _XML_DECLARATION_REGEX.sub(r'', xml_content, 1)
 
 
 def _xml_content_to_string(file_or_xml):
 
-    if isinstance(file_or_xml, string_types):
-        # For Python 2 compliance: FIRST check basestring before str
+    if isinstance(file_or_xml, str):
         return file_or_xml.strip()
-    elif isinstance(file_or_xml, binary_type):
-        # For Python 3 compliance: NOW decode binary arrays (not Python 2 str)
+    elif isinstance(file_or_xml, bytes):
         return file_or_xml.decode(encoding=DEFAULT_ENCODING).strip()
-    elif hasattr(file_or_xml, 'read'):
-        # Handles files with unicode or binary, but more importantly StringIO
-        return _xml_content_to_string(file_or_xml.read())
-    else:
+    elif not hasattr(file_or_xml, 'read'):
         return file_or_xml
+
+    # Handles files with unicode or binary, but also StringIO
+    return _xml_content_to_string(file_or_xml.read())
 
 
 def write_element(elem_to_parse, file_or_path, encoding=DEFAULT_ENCODING):
@@ -1011,6 +999,6 @@ def write_element(elem_to_parse, file_or_path, encoding=DEFAULT_ENCODING):
     :see: get_element(parent_to_parse, element_path)
     """
 
-    xml_header = '<?xml version="1.0" encoding="{0}"?>'.format(encoding)
+    xml_header = f'<?xml version="1.0" encoding="{encoding}"?>'
 
     get_element_tree(elem_to_parse).write(file_or_path, encoding, xml_header)

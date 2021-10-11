@@ -1,12 +1,6 @@
-import six
 import unittest
 
-from parserutils.numbers import is_number
-from parserutils.strings import EMPTY_BIN, EMPTY_STR
-
-
-binary_type = getattr(six, 'binary_type')
-text_type = getattr(six, 'text_type')
+from ..numbers import is_number
 
 
 class NumberTestCase(unittest.TestCase):
@@ -15,7 +9,7 @@ class NumberTestCase(unittest.TestCase):
         """ Tests is_number with general inputs """
 
         # Test invalid values with parameter that allows Booleans
-        invalid = (None, EMPTY_BIN, EMPTY_STR, {}, [], float('+inf'), float('-inf'), float('nan'))
+        invalid = (None, b'', '', {}, [], float('+inf'), float('-inf'), float('nan'))
         for bad in invalid:
             self.assertFalse(is_number(bad, if_bool=True), '"{0}" is actually a number'.format(type(bad).__name__))
 
@@ -25,7 +19,7 @@ class NumberTestCase(unittest.TestCase):
             self.assertFalse(is_number(bad), '"{0}" is actually a number'.format(type(bad).__name__))
 
         # Test valid values without parameter that allows Booleans
-        valid = (0, 1.1, binary_type('2'.encode()), text_type('3'), binary_type('4.4'.encode()), text_type('5.5'))
+        valid = (0, 1.1, b'2', '3', b'4.4', '5.5')
         for num in valid:
             self.assertTrue(is_number(num), '"{0}" is not a number'.format(type(num).__name__))
 
