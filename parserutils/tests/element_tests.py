@@ -59,11 +59,7 @@ class XMLTestCase(unittest.TestCase):
         if not isinstance(self.elem_data_str, str):
             self.elem_data_str = self.elem_data_str.decode(DEFAULT_ENCODING)
 
-        if isinstance(self.elem_data_str, bytes):
-            self.elem_data_bin = self.elem_data_str
-        else:
-            self.elem_data_bin = self.elem_data_str.encode(DEFAULT_ENCODING)
-
+        self.elem_data_bin = self.elem_data_str.encode(DEFAULT_ENCODING)
         self.elem_data_dict = element_to_dict(self.elem_data_str)
         self.elem_data_reader = io.StringIO(self.elem_data_str)
 
