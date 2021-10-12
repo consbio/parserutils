@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "parserutils"
-version = "2.0"
+version = "2.0.1"
 description = "A collection of performant parsing utilities"
 authors = ["dharvey-consbio <dani.harvey@consbio.org>"]
 keywords = ["parser", "parsing", "utils", "utilities", "collections", "dates", "elements", "numbers", "strings", "url", "xml"]

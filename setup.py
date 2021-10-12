@@ -28,7 +28,7 @@ setup(
     long_description=long_description,
     long_description_content_type='text/markdown',
     keywords='parser,parsing,utils,utilities,collections,dates,elements,numbers,strings,url,xml',
-    version='2.0',
+    version='2.0.1',
     packages=['parserutils'],
     install_requires=['defusedxml>=0.7.1', 'python-dateutil>=2.8.2'],
     tests_require=['mock'],
